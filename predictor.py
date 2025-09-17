@@ -24,6 +24,11 @@ testing_data = testing_response.json()
 def create_matches_dataframe(data):
     matches_list = []
     for match in data['matches']:
+        if match['score']['winner'] == None :
+            continue
+        referee_id = 0  # Default for unknown/missing referee
+        if 'referees' in match and len(match['referees']) > 0:
+            referee_id = match['referees'][0]['id']
         match_info = {'date' : match['utcDate'],
                     'matchday' : match['matchday'],
                     'home_team' : match['homeTeam']['name'],
@@ -32,7 +37,9 @@ def create_matches_dataframe(data):
                     'away_team_id' : match['awayTeam']['id'],
                     'home_score' : match['score']['fullTime']['home'],
                     'away_score' : match['score']['fullTime']['away'],
-                    'result' : match['score']['winner']}
+                    'result' : match['score']['winner'],
+                    'referees_id' : referee_id}
+
         matches_list.append(match_info)
     return pd.DataFrame(matches_list)
 training_df = create_matches_dataframe(training_data)
@@ -52,9 +59,14 @@ testing_target = create_target(testing_df)
 # Features that will help model to predict
 def create_features(df):
     features = pd.DataFrame()
+    # Teams perform better in beggining/end of season
     features['matchday'] = df['matchday']
+    # Team overall h2h history
     features['home_team_id'] = df['home_team_id']
     features['away_team_id'] = df['away_team_id']
+    # Referee bias
+    features['referees_id'] = df['referees_id'] # Make better
+
     return features
 training_features = create_features(training_df)
 testing_features = create_features(testing_df)
