@@ -12,22 +12,24 @@ load_dotenv()
 API_KEY = os.getenv('FOOTBALL_API_KEY')
 headers = {"X-Auth-Token": API_KEY}
 
-# Get La Liga matches
-training_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2023"
-training_response = requests.get(training_url, headers=headers)
-training_data = training_response.json()
+# Get La Liga matches for training (2023 and 2024) and current season (2025)
+training_2023_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2023"
+training_2024_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2024"
+current_2025_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2025"
 
-testing_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2024"
-testing_response = requests.get(testing_url, headers=headers)
-testing_data = testing_response.json()
+print("Fetching data from API...")
+training_2023_response = requests.get(training_2023_url, headers=headers)
+training_2024_response = requests.get(training_2024_url, headers=headers)
+current_2025_response = requests.get(current_2025_url, headers=headers)
+
+training_2023_data = training_2023_response.json()
+training_2024_data = training_2024_response.json()
+current_2025_data = current_2025_response.json()
 
 # Create matches dataframe
 def create_matches_dataframe(data):
     matches_list = []
     for match in data['matches']:
-        if match['score']['winner'] == None:
-            continue
-            
         match_info = {
             'date': pd.to_datetime(match['utcDate']),
             'matchday': match['matchday'],
@@ -37,17 +39,41 @@ def create_matches_dataframe(data):
             'away_team_name': match['awayTeam']['name'],
             'home_score': match['score']['fullTime']['home'],
             'away_score': match['score']['fullTime']['away'],
-            'result': match['score']['winner']
+            'result': match['score']['winner'],
+            'status': match['status']
         }
         matches_list.append(match_info)
     
     return pd.DataFrame(matches_list).sort_values('date')
 
-training_df = create_matches_dataframe(training_data)
-testing_df = create_matches_dataframe(testing_data)
+training_2023_df = create_matches_dataframe(training_2023_data)
+training_2024_df = create_matches_dataframe(training_2024_data)
+current_2025_df = create_matches_dataframe(current_2025_data)
 
-print(f"Training matches: {len(training_df)}")
-print(f"Testing matches: {len(testing_df)}")
+# Filter only finished matches for training
+training_2023_df = training_2023_df[training_2023_df['result'].notna()].copy()
+training_2024_df = training_2024_df[training_2024_df['result'].notna()].copy()
+
+# Separate completed and upcoming matches in 2025
+completed_2025_df = current_2025_df[current_2025_df['result'].notna()].copy()
+upcoming_2025_df = current_2025_df[current_2025_df['result'].isna()].copy()
+
+print(f"Training matches 2023: {len(training_2023_df)}")
+print(f"Training matches 2024: {len(training_2024_df)}")
+print(f"Completed matches 2025: {len(completed_2025_df)}")
+print(f"Upcoming matches 2025: {len(upcoming_2025_df)}")
+
+# Find the next gameweek to predict
+if len(upcoming_2025_df) > 0:
+    next_gameweek = upcoming_2025_df['matchday'].min()
+    print(f"Next gameweek to predict: {next_gameweek}")
+    
+    # Get matches for the next gameweek
+    next_gameweek_matches = upcoming_2025_df[upcoming_2025_df['matchday'] == next_gameweek].copy()
+    print(f"Matches in gameweek {next_gameweek}: {len(next_gameweek_matches)}")
+else:
+    print("No upcoming matches found!")
+    next_gameweek = None
 
 # Enhanced statistics with focus on predictive power
 def calculate_predictive_stats(df):
@@ -78,6 +104,77 @@ def calculate_predictive_stats(df):
         away_score = match['away_score']
         result = match['result']
         matchday = match['matchday']
+        
+        # Skip if no result (upcoming match)
+        if pd.isna(result):
+            # For upcoming matches, still calculate stats based on current data
+            home_stats = team_stats[home_id]
+            away_stats = team_stats[away_id]
+            
+            # Calculate current stats
+            df.loc[idx, 'home_ppg'] = home_stats['points'] / max(1, home_stats['matches'])
+            df.loc[idx, 'away_ppg'] = away_stats['points'] / max(1, away_stats['matches'])
+            
+            home_gd = home_stats['goals_for'] - home_stats['goals_against']
+            away_gd = away_stats['goals_for'] - away_stats['goals_against']
+            df.loc[idx, 'home_gd_per_game'] = home_gd / max(1, home_stats['matches'])
+            df.loc[idx, 'away_gd_per_game'] = away_gd / max(1, away_stats['matches'])
+            
+            df.loc[idx, 'home_home_ppg'] = home_stats['home_points'] / max(1, home_stats['home_matches'])
+            df.loc[idx, 'away_away_ppg'] = away_stats['away_points'] / max(1, away_stats['away_matches'])
+            
+            df.loc[idx, 'home_attack'] = home_stats['home_gf'] / max(1, home_stats['home_matches'])
+            df.loc[idx, 'away_attack'] = away_stats['away_gf'] / max(1, away_stats['away_matches'])
+            df.loc[idx, 'home_defense'] = home_stats['home_ga'] / max(1, home_stats['home_matches'])
+            df.loc[idx, 'away_defense'] = away_stats['away_ga'] / max(1, away_stats['away_matches'])
+            
+            # Recent form
+            recent_5 = home_stats['recent_results'][-5:] if len(home_stats['recent_results']) >= 5 else home_stats['recent_results']
+            recent_3 = home_stats['recent_results'][-3:] if len(home_stats['recent_results']) >= 3 else home_stats['recent_results']
+            away_recent_5 = away_stats['recent_results'][-5:] if len(away_stats['recent_results']) >= 5 else away_stats['recent_results']
+            away_recent_3 = away_stats['recent_results'][-3:] if len(away_stats['recent_results']) >= 3 else away_stats['recent_results']
+            
+            df.loc[idx, 'home_form_5'] = np.mean(recent_5) if recent_5 else 1.0
+            df.loc[idx, 'home_form_3'] = np.mean(recent_3) if recent_3 else 1.0
+            df.loc[idx, 'away_form_5'] = np.mean(away_recent_5) if away_recent_5 else 1.0
+            df.loc[idx, 'away_form_3'] = np.mean(away_recent_3) if away_recent_3 else 1.0
+            
+            # Recent scoring form
+            recent_gf_5 = home_stats['recent_gf'][-5:] if len(home_stats['recent_gf']) >= 5 else home_stats['recent_gf']
+            recent_ga_5 = home_stats['recent_ga'][-5:] if len(home_stats['recent_ga']) >= 5 else home_stats['recent_ga']
+            away_recent_gf_5 = away_stats['recent_gf'][-5:] if len(away_stats['recent_gf']) >= 5 else away_stats['recent_gf']
+            away_recent_ga_5 = away_stats['recent_ga'][-5:] if len(away_stats['recent_ga']) >= 5 else away_stats['recent_ga']
+            
+            df.loc[idx, 'home_recent_scoring'] = np.mean(recent_gf_5) if recent_gf_5 else 0
+            df.loc[idx, 'away_recent_scoring'] = np.mean(away_recent_gf_5) if away_recent_gf_5 else 0
+            df.loc[idx, 'home_recent_conceding'] = np.mean(recent_ga_5) if recent_ga_5 else 0
+            df.loc[idx, 'away_recent_conceding'] = np.mean(away_recent_ga_5) if away_recent_ga_5 else 0
+            
+            # Performance against different quality opposition
+            home_vs_top = home_stats['vs_top_teams']
+            home_vs_bottom = home_stats['vs_bottom_teams']
+            away_vs_top = away_stats['vs_top_teams']
+            away_vs_bottom = away_stats['vs_bottom_teams']
+            
+            df.loc[idx, 'home_vs_top_ppg'] = home_vs_top['points'] / max(1, home_vs_top['matches'])
+            df.loc[idx, 'home_vs_bottom_ppg'] = home_vs_bottom['points'] / max(1, home_vs_bottom['matches'])
+            df.loc[idx, 'away_vs_top_ppg'] = away_vs_top['points'] / max(1, away_vs_top['matches'])
+            df.loc[idx, 'away_vs_bottom_ppg'] = away_vs_bottom['points'] / max(1, away_vs_bottom['matches'])
+            
+            # Quality indicators
+            df.loc[idx, 'home_clean_sheet_rate'] = home_stats['clean_sheets'] / max(1, home_stats['matches'])
+            df.loc[idx, 'away_clean_sheet_rate'] = away_stats['clean_sheets'] / max(1, away_stats['matches'])
+            
+            df.loc[idx, 'home_btts_rate'] = home_stats['btts_against'] / max(1, home_stats['matches'])
+            df.loc[idx, 'away_btts_rate'] = away_stats['btts_against'] / max(1, away_stats['matches'])
+            
+            # Average goal margins
+            home_margins = home_stats['goal_margins'][-10:] if home_stats['goal_margins'] else [0]
+            away_margins = away_stats['goal_margins'][-10:] if away_stats['goal_margins'] else [0]
+            df.loc[idx, 'home_avg_margin'] = np.mean(home_margins)
+            df.loc[idx, 'away_avg_margin'] = np.mean(away_margins)
+            
+            continue
         
         # Calculate current league position based on points per match
         current_positions = {}
@@ -295,22 +392,10 @@ def calculate_predictive_stats(df):
     
     return df
 
-# Calculate stats
-print("Calculating enhanced predictive statistics...")
-training_df = calculate_predictive_stats(training_df.copy())
-
-# For testing, continue from training stats
-combined_df = pd.concat([training_df, testing_df]).sort_values('date')
-combined_df = calculate_predictive_stats(combined_df)
-testing_df = combined_df.iloc[len(training_df):].copy()
-
 # Create target
 def create_target(df):
     target_map = {'HOME_TEAM': 1, 'AWAY_TEAM': 0, 'DRAW': 2}
     return df['result'].map(target_map)
-
-training_target = create_target(training_df)
-testing_target = create_target(testing_df)
 
 # Create focused feature set
 def create_focused_features(df):
@@ -377,62 +462,121 @@ def create_focused_features(df):
     
     return features
 
-training_features = create_focused_features(training_df)
-testing_features = create_focused_features(testing_df)
+print("\nCalculating enhanced predictive statistics...")
 
-print(f"Focused features: {len(training_features.columns)} features")
+# Combine all training data (2023 + 2024 + completed 2025 matches)
+all_training_data = pd.concat([training_2023_df, training_2024_df, completed_2025_df]).sort_values('date').reset_index(drop=True)
+print(f"Total training matches: {len(all_training_data)}")
 
-# Optimized Random Forest
-rf = RandomForestClassifier(
-    n_estimators=300,          # More trees for stability
-    max_depth=12,              # Deeper trees for complex patterns
-    min_samples_split=8,       # Prevent overfitting
-    min_samples_leaf=3,        # Ensure meaningful leaves
-    max_features='sqrt',       # Feature sampling
-    bootstrap=True,
-    random_state=42,
-    class_weight='balanced'    # Handle class imbalance
-)
-
-print("\nTraining optimized Random Forest...")
-rf.fit(training_features, training_target)
-
-# Predictions and evaluation
-predictions = rf.predict(testing_features)
-accuracy = rf.score(testing_features, testing_target)
-
-print(f"Random Forest Accuracy: {accuracy:.2%}")
-
-# Feature importance
-importance_df = pd.DataFrame({
-    'feature': training_features.columns,
-    'importance': rf.feature_importances_
-}).sort_values('importance', ascending=False)
-
-print(f"\nTop 10 Most Important Features:")
-print(importance_df.head(10))
-
-# Prediction analysis
-result_names = {0: 'Away Win', 1: 'Home Win', 2: 'Draw'}
-print(f"\nSample Predictions:")
-
-for i in range(min(8, len(testing_df))):
-    actual = result_names[testing_target.iloc[i]]
-    predicted = result_names[predictions[i]]
-    home_team = testing_df.iloc[i]['home_team_name']
-    away_team = testing_df.iloc[i]['away_team_name']
-    matchday = testing_df.iloc[i]['matchday']
+# Calculate stats for all data including upcoming matches
+if next_gameweek is not None:
+    # Combine all data for stats calculation
+    all_data_with_upcoming = pd.concat([all_training_data, next_gameweek_matches]).sort_values('date').reset_index(drop=True)
     
-    print(f"MD{matchday}: {home_team} vs {away_team}")
-    print(f"  Predicted: {predicted}, Actual: {actual} {'✓' if actual == predicted else '✗'}")
+    # Calculate stats
+    all_data_with_stats = calculate_predictive_stats(all_data_with_upcoming.copy())
+    
+    # Split back into training and prediction data
+    training_data_with_stats = all_data_with_stats.iloc[:len(all_training_data)].copy()
+    prediction_data_with_stats = all_data_with_stats.iloc[len(all_training_data):].copy()
+    
+    # Create features and targets
+    training_features = create_focused_features(training_data_with_stats)
+    training_target = create_target(training_data_with_stats)
+    prediction_features = create_focused_features(prediction_data_with_stats)
+    
+    print(f"Training features shape: {training_features.shape}")
+    print(f"Prediction features shape: {prediction_features.shape}")
+    
+    # Train the model
+    print("\nTraining optimized Random Forest...")
+    rf = RandomForestClassifier(
+        n_estimators=300,          # More trees for stability
+        max_depth=12,              # Deeper trees for complex patterns
+        min_samples_split=8,       # Prevent overfitting
+        min_samples_leaf=3,        # Ensure meaningful leaves
+        max_features='sqrt',       # Feature sampling
+        bootstrap=True,
+        random_state=42,
+        class_weight='balanced'    # Handle class imbalance
+    )
+    
+    rf.fit(training_features, training_target)
+    
+    # Make predictions for next gameweek
+    predictions = rf.predict(prediction_features)
+    prediction_probabilities = rf.predict_proba(prediction_features)
+    
+    # Results mapping
+    result_names = {0: 'Away Win', 1: 'Home Win', 2: 'Draw'}
+    
+    print(f"\n{'='*60}")
+    print(f"PREDICTIONS FOR GAMEWEEK {next_gameweek}")
+    print(f"{'='*60}")
+    
+    for i, (idx, match) in enumerate(prediction_data_with_stats.iterrows()):
+        home_team = match['home_team_name']
+        away_team = match['away_team_name']
+        predicted_result = result_names[predictions[i]]
+        
+        # Get probabilities
+        home_prob = prediction_probabilities[i][1] * 100
+        away_prob = prediction_probabilities[i][0] * 100
+        draw_prob = prediction_probabilities[i][2] * 100
+        
+        # Get match date
+        match_date = match['date'].strftime('%Y-%m-%d %H:%M')
+        
+        print(f"\n{match_date}")
+        print(f"{home_team} vs {away_team}")
+        print(f"Prediction: {predicted_result}")
+        print(f"Probabilities: Home {home_prob:.1f}% | Draw {draw_prob:.1f}% | Away {away_prob:.1f}%")
+        
+        # Show key stats
+        home_ppg = prediction_data_with_stats.iloc[i]['home_ppg']
+        away_ppg = prediction_data_with_stats.iloc[i]['away_ppg']
+        home_form = prediction_data_with_stats.iloc[i]['home_form_5']
+        away_form = prediction_data_with_stats.iloc[i]['away_form_5']
+        
+        print(f"Stats: {home_team} PPG: {home_ppg:.2f}, Form: {home_form:.2f} | {away_team} PPG: {away_ppg:.2f}, Form: {away_form:.2f}")
+    
+    # Feature importance
+    importance_df = pd.DataFrame({
+        'feature': training_features.columns,
+        'importance': rf.feature_importances_
+    }).sort_values('importance', ascending=False)
+    
+    print(f"\n{'='*60}")
+    print("TOP 10 MOST IMPORTANT FEATURES:")
+    print(f"{'='*60}")
+    for i, row in importance_df.head(10).iterrows():
+        print(f"{row['feature']}: {row['importance']:.4f}")
+    
+    # Model performance on training data (for reference)
+    training_accuracy = rf.score(training_features, training_target)
+    print(f"\nModel training accuracy: {training_accuracy:.2%}")
+    
+    # Performance by result type on training data
+    training_predictions = rf.predict(training_features)
+    print(f"\nTraining accuracy by result type:")
+    for result_code, result_name in result_names.items():
+        mask = training_target == result_code
+        if mask.sum() > 0:
+            acc = (training_predictions[mask] == training_target[mask]).mean()
+            count = mask.sum()
+            print(f"{result_name}: {acc:.2%} ({count} matches)")
+    
+    print(f"\n{'='*60}")
+    print("SUMMARY")
+    print(f"{'='*60}")
+    print(f"✅ Trained on {len(all_training_data)} matches from 2023-2025")
+    print(f"✅ Model accuracy on training data: {training_accuracy:.2%}")
+    print(f"✅ Generated predictions for {len(next_gameweek_matches)} matches in gameweek {next_gameweek}")
+    print(f"✅ Features used: {len(training_features.columns)} predictive features")
+    
+else:
+    print("No upcoming matches found to predict!")
 
-# Performance by result type
-print(f"\nAccuracy by result type:")
-for result_code, result_name in result_names.items():
-    mask = testing_target == result_code
-    if mask.sum() > 0:
-        acc = (predictions[mask] == testing_target[mask]).mean()
-        count = mask.sum()
-        print(f"{result_name}: {acc:.2%} ({count} matches)")
-
-print(f"\nAccuracy: {accuracy:.2%}")
+print(f"\n{'='*60}")
+print("ANALYSIS COMPLETE")
+print(f"{'='*60}")
