@@ -507,9 +507,6 @@ if next_gameweek is not None:
     predictions = rf.predict(prediction_features)
     prediction_probabilities = rf.predict_proba(prediction_features)
     
-    # Results mapping
-    result_names = {0: 'Away Win', 1: 'Home Win', 2: 'Draw'}
-    
     print(f"\n{'='*60}")
     print(f"PREDICTIONS FOR GAMEWEEK {next_gameweek}")
     print(f"{'='*60}")
@@ -517,7 +514,14 @@ if next_gameweek is not None:
     for i, (idx, match) in enumerate(prediction_data_with_stats.iterrows()):
         home_team = match['home_team_name']
         away_team = match['away_team_name']
-        predicted_result = result_names[predictions[i]]
+        
+        # Create result names with actual team names
+        if predictions[i] == 0:  # Away win
+            predicted_result = f"{away_team} Win"
+        elif predictions[i] == 1:  # Home win
+            predicted_result = f"{home_team} Win"
+        else:  # Draw
+            predicted_result = "Draw"
         
         # Get probabilities
         home_prob = prediction_probabilities[i][1] * 100
@@ -530,7 +534,7 @@ if next_gameweek is not None:
         print(f"\n{match_date}")
         print(f"{home_team} vs {away_team}")
         print(f"Prediction: {predicted_result}")
-        print(f"Probabilities: Home {home_prob:.1f}% | Draw {draw_prob:.1f}% | Away {away_prob:.1f}%")
+        print(f"Probabilities: {home_team} {home_prob:.1f}% | Draw {draw_prob:.1f}% | {away_team} {away_prob:.1f}%")
         
         # Show key stats
         home_ppg = prediction_data_with_stats.iloc[i]['home_ppg']
@@ -558,6 +562,7 @@ if next_gameweek is not None:
     
     # Performance by result type on training data
     training_predictions = rf.predict(training_features)
+    result_names = {0: 'Away Win', 1: 'Home Win', 2: 'Draw'}
     print(f"\nTraining accuracy by result type:")
     for result_code, result_name in result_names.items():
         mask = training_target == result_code
