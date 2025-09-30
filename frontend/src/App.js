@@ -1,23 +1,13 @@
-import logo from './logo.svg';
 import './App.css';
+import GameWeekView from './components/GameWeekView';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        La Liga Predictor:
       </header>
+      <GameWeekView matches={[{team1: 'Team A', team2: 'Team B'}, {team1: 'Team C', team2: 'Team D'}]} />
     </div>
   );
 }
