@@ -4,79 +4,134 @@ An AI-powered machine learning model that predicts La Liga match outcomes using 
 
 ## 📊 Current Status
 
-**Last Updated:** 2025-09-28 10:57:37  
-**Model Training Accuracy:** 93.4%  
-**Overall Prediction Accuracy:** 42.9%  
-**Total Matches Predicted:** 10  
-**Total Matches with Results:** 7  
+**Last Updated:** 2025-09-30 17:13:27  
+**Model Training Accuracy:** 93.1%  
+**Overall Prediction Accuracy:** 50.0%  
+**Total Matches Predicted:** 20  
+**Total Matches with Results:** 10  
 
 ## 🔮 Current Gameweek Predictions
 
-### Gameweek 7
+### Gameweek 8
 
-✅ **Girona FC vs RCD Espanyol de Barcelona**  
-📅 2025-09-26 19:00  
-🎯 **Prediction:** Draw  
-**Result:** Draw (0-0) - ✅ CORRECT  
-📊 Probabilities: Girona FC 32.6% | Draw 34.9% | RCD Espanyol de Barcelona 32.4%  
-
-✅ **Getafe CF vs Levante UD**  
-📅 2025-09-27 12:00  
-🎯 **Prediction:** Draw  
-**Result:** Draw (1-1) - ✅ CORRECT  
-📊 Probabilities: Getafe CF 33.3% | Draw 35.4% | Levante UD 31.3%  
-
-❌ **Club Atlético de Madrid vs Real Madrid CF**  
-📅 2025-09-27 14:15  
-🎯 **Prediction:** Real Madrid CF Win  
-**Result:** Club Atlético de Madrid Win (5-2) - ❌ WRONG  
-📊 Probabilities: Club Atlético de Madrid 22.8% | Draw 33.7% | Real Madrid CF 43.5%  
-
-❌ **RCD Mallorca vs Deportivo Alavés**  
-📅 2025-09-27 16:30  
-🎯 **Prediction:** Draw  
-**Result:** RCD Mallorca Win (1-0) - ❌ WRONG  
-📊 Probabilities: RCD Mallorca 28.0% | Draw 46.1% | Deportivo Alavés 25.8%  
-
-✅ **Villarreal CF vs Athletic Club**  
-📅 2025-09-27 19:00  
-🎯 **Prediction:** Villarreal CF Win  
-**Result:** Villarreal CF Win (1-0) - ✅ CORRECT  
-📊 Probabilities: Villarreal CF 44.0% | Draw 31.1% | Athletic Club 24.9%  
-
-❌ **Rayo Vallecano de Madrid vs Sevilla FC**  
-📅 2025-09-28 12:00  
-🎯 **Prediction:** Draw  
-**Result:** Sevilla FC Win (0-1) - ❌ WRONG  
-📊 Probabilities: Rayo Vallecano de Madrid 39.1% | Draw 39.7% | Sevilla FC 21.2%  
-
-❌ **Elche CF vs RC Celta de Vigo**  
-📅 2025-09-28 14:15  
-🎯 **Prediction:** Elche CF Win  
-**Result:** Draw (1-1) - ❌ WRONG  
-📊 Probabilities: Elche CF 59.4% | Draw 29.8% | RC Celta de Vigo 10.8%  
-
-⏳ **FC Barcelona vs Real Sociedad de Fútbol**  
-📅 2025-09-28 16:30  
-🎯 **Prediction:** FC Barcelona Win  
-**Status:** Awaiting result  
-📊 Probabilities: FC Barcelona 75.8% | Draw 17.1% | Real Sociedad de Fútbol 7.1%  
-
-⏳ **Real Betis Balompié vs CA Osasuna**  
-📅 2025-09-28 19:00  
+⏳ **CA Osasuna vs Getafe CF**  
+📅 2025-10-03 19:00  
 🎯 **Prediction:** CA Osasuna Win  
 **Status:** Awaiting result  
-📊 Probabilities: Real Betis Balompié 26.9% | Draw 32.9% | CA Osasuna 40.2%  
+📊 Probabilities: CA Osasuna 48.6% | Draw 31.2% | Getafe CF 20.2%  
 
-⏳ **Valencia CF vs Real Oviedo**  
-📅 2025-09-29 19:00  
-🎯 **Prediction:** Valencia CF Win  
+⏳ **Real Oviedo vs Levante UD**  
+📅 2025-10-04 12:00  
+🎯 **Prediction:** Draw  
 **Status:** Awaiting result  
-📊 Probabilities: Valencia CF 73.4% | Draw 17.3% | Real Oviedo 9.2%  
+📊 Probabilities: Real Oviedo 25.5% | Draw 53.1% | Levante UD 21.4%  
+
+⏳ **Girona FC vs Valencia CF**  
+📅 2025-10-04 14:15  
+🎯 **Prediction:** Draw  
+**Status:** Awaiting result  
+📊 Probabilities: Girona FC 26.4% | Draw 50.2% | Valencia CF 23.4%  
+
+⏳ **Athletic Club vs RCD Mallorca**  
+📅 2025-10-04 16:30  
+🎯 **Prediction:** Athletic Club Win  
+**Status:** Awaiting result  
+📊 Probabilities: Athletic Club 48.1% | Draw 32.9% | RCD Mallorca 19.0%  
+
+⏳ **Real Madrid CF vs Villarreal CF**  
+📅 2025-10-04 19:00  
+🎯 **Prediction:** Real Madrid CF Win  
+**Status:** Awaiting result  
+📊 Probabilities: Real Madrid CF 53.2% | Draw 26.5% | Villarreal CF 20.4%  
+
+⏳ **Deportivo Alavés vs Elche CF**  
+📅 2025-10-05 12:00  
+🎯 **Prediction:** Draw  
+**Status:** Awaiting result  
+📊 Probabilities: Deportivo Alavés 17.0% | Draw 42.0% | Elche CF 41.0%  
+
+⏳ **Sevilla FC vs FC Barcelona**  
+📅 2025-10-05 14:15  
+🎯 **Prediction:** Draw  
+**Status:** Awaiting result  
+📊 Probabilities: Sevilla FC 15.4% | Draw 44.6% | FC Barcelona 40.0%  
+
+⏳ **RCD Espanyol de Barcelona vs Real Betis Balompié**  
+📅 2025-10-05 16:30  
+🎯 **Prediction:** Draw  
+**Status:** Awaiting result  
+📊 Probabilities: RCD Espanyol de Barcelona 24.5% | Draw 40.5% | Real Betis Balompié 35.0%  
+
+⏳ **Real Sociedad de Fútbol vs Rayo Vallecano de Madrid**  
+📅 2025-10-05 16:30  
+🎯 **Prediction:** Rayo Vallecano de Madrid Win  
+**Status:** Awaiting result  
+📊 Probabilities: Real Sociedad de Fútbol 32.3% | Draw 28.9% | Rayo Vallecano de Madrid 38.8%  
+
+⏳ **RC Celta de Vigo vs Club Atlético de Madrid**  
+📅 2025-10-05 19:00  
+🎯 **Prediction:** Club Atlético de Madrid Win  
+**Status:** Awaiting result  
+📊 Probabilities: RC Celta de Vigo 18.6% | Draw 27.5% | Club Atlético de Madrid 53.9%  
 
 ## 📈 Prediction History
 
-No historical predictions available yet. Predictions will appear here after gameweeks are completed.
+### Gameweek 7
+*Predicted on: 2025-09-28 10:57:37*
+
+**Final Accuracy: 50.0% (5/10 correct)**
+
+✅ **Girona FC vs RCD Espanyol de Barcelona**  
+🎯 Predicted: Draw  
+⚽ **Final Result:** Draw (0-0)  
+📊 Confidence: 32.6% | 34.9% | 32.4%
+
+✅ **Getafe CF vs Levante UD**  
+🎯 Predicted: Draw  
+⚽ **Final Result:** Draw (1-1)  
+📊 Confidence: 33.3% | 35.4% | 31.3%
+
+❌ **Club Atlético de Madrid vs Real Madrid CF**  
+🎯 Predicted: Real Madrid CF Win  
+⚽ **Final Result:** Club Atlético de Madrid Win (5-2)  
+📊 Confidence: 22.8% | 33.7% | 43.5%
+
+❌ **RCD Mallorca vs Deportivo Alavés**  
+🎯 Predicted: Draw  
+⚽ **Final Result:** RCD Mallorca Win (1-0)  
+📊 Confidence: 28.0% | 46.1% | 25.8%
+
+✅ **Villarreal CF vs Athletic Club**  
+🎯 Predicted: Villarreal CF Win  
+⚽ **Final Result:** Villarreal CF Win (1-0)  
+📊 Confidence: 44.0% | 31.1% | 24.9%
+
+❌ **Rayo Vallecano de Madrid vs Sevilla FC**  
+🎯 Predicted: Draw  
+⚽ **Final Result:** Sevilla FC Win (0-1)  
+📊 Confidence: 39.1% | 39.7% | 21.2%
+
+✅ **Elche CF vs RC Celta de Vigo**  
+🎯 Predicted: Elche CF Win  
+⚽ **Final Result:** Elche CF Win (2-1)  
+📊 Confidence: 59.4% | 29.8% | 10.8%
+
+✅ **FC Barcelona vs Real Sociedad de Fútbol**  
+🎯 Predicted: FC Barcelona Win  
+⚽ **Final Result:** FC Barcelona Win (2-1)  
+📊 Confidence: 75.8% | 17.1% | 7.1%
+
+❌ **Real Betis Balompié vs CA Osasuna**  
+🎯 Predicted: CA Osasuna Win  
+⚽ **Final Result:** Real Betis Balompié Win (2-0)  
+📊 Confidence: 26.9% | 32.9% | 40.2%
+
+❌ **Valencia CF vs Real Oviedo**  
+🎯 Predicted: Valencia CF Win  
+⚽ **Final Result:** Real Oviedo Win (1-2)  
+📊 Confidence: 73.4% | 17.3% | 9.2%
+
+---
 
 ## 🤖 Model Information
 

@@ -88,10 +88,10 @@
         "away_prob": 10.8,
         "draw_prob": 29.8,
         "date": "2025-09-28 14:15",
-        "actual_result": "Draw",
-        "home_score": 1,
+        "actual_result": "Elche CF Win",
+        "home_score": 2,
         "away_score": 1,
-        "correct": false
+        "correct": true
       },
       {
         "home_team": "FC Barcelona",
@@ -100,7 +100,11 @@
         "home_prob": 75.8,
         "away_prob": 7.1,
         "draw_prob": 17.1,
-        "date": "2025-09-28 16:30"
+        "date": "2025-09-28 16:30",
+        "actual_result": "FC Barcelona Win",
+        "home_score": 2,
+        "away_score": 1,
+        "correct": true
       },
       {
         "home_team": "Real Betis Balompié",
@@ -109,7 +113,11 @@
         "home_prob": 26.9,
         "away_prob": 40.2,
         "draw_prob": 32.9,
-        "date": "2025-09-28 19:00"
+        "date": "2025-09-28 19:00",
+        "actual_result": "Real Betis Balompié Win",
+        "home_score": 2,
+        "away_score": 0,
+        "correct": false
       },
       {
         "home_team": "Valencia CF",
@@ -118,7 +126,106 @@
         "home_prob": 73.4,
         "away_prob": 9.2,
         "draw_prob": 17.3,
-        "date": "2025-09-29 19:00"
+        "date": "2025-09-29 19:00",
+        "actual_result": "Real Oviedo Win",
+        "home_score": 1,
+        "away_score": 2,
+        "correct": false
+      }
+    ]
+  },
+  "8": {
+    "date_predicted": "2025-09-30 17:13:27",
+    "matches": [
+      {
+        "home_team": "CA Osasuna",
+        "away_team": "Getafe CF",
+        "predicted_result": "CA Osasuna Win",
+        "home_prob": 48.6,
+        "away_prob": 20.2,
+        "draw_prob": 31.2,
+        "date": "2025-10-03 19:00"
+      },
+      {
+        "home_team": "Real Oviedo",
+        "away_team": "Levante UD",
+        "predicted_result": "Draw",
+        "home_prob": 25.5,
+        "away_prob": 21.4,
+        "draw_prob": 53.1,
+        "date": "2025-10-04 12:00"
+      },
+      {
+        "home_team": "Girona FC",
+        "away_team": "Valencia CF",
+        "predicted_result": "Draw",
+        "home_prob": 26.4,
+        "away_prob": 23.4,
+        "draw_prob": 50.2,
+        "date": "2025-10-04 14:15"
+      },
+      {
+        "home_team": "Athletic Club",
+        "away_team": "RCD Mallorca",
+        "predicted_result": "Athletic Club Win",
+        "home_prob": 48.1,
+        "away_prob": 19.0,
+        "draw_prob": 32.9,
+        "date": "2025-10-04 16:30"
+      },
+      {
+        "home_team": "Real Madrid CF",
+        "away_team": "Villarreal CF",
+        "predicted_result": "Real Madrid CF Win",
+        "home_prob": 53.2,
+        "away_prob": 20.4,
+        "draw_prob": 26.5,
+        "date": "2025-10-04 19:00"
+      },
+      {
+        "home_team": "Deportivo Alavés",
+        "away_team": "Elche CF",
+        "predicted_result": "Draw",
+        "home_prob": 17.0,
+        "away_prob": 41.0,
+        "draw_prob": 42.0,
+        "date": "2025-10-05 12:00"
+      },
+      {
+        "home_team": "Sevilla FC",
+        "away_team": "FC Barcelona",
+        "predicted_result": "Draw",
+        "home_prob": 15.4,
+        "away_prob": 40.0,
+        "draw_prob": 44.6,
+        "date": "2025-10-05 14:15"
+      },
+      {
+        "home_team": "RCD Espanyol de Barcelona",
+        "away_team": "Real Betis Balompié",
+        "predicted_result": "Draw",
+        "home_prob": 24.5,
+        "away_prob": 35.0,
+        "draw_prob": 40.5,
+        "date": "2025-10-05 16:30"
+      },
+      {
+        "home_team": "Real Sociedad de Fútbol",
+        "away_team": "Rayo Vallecano de Madrid",
+        "predicted_result": "Rayo Vallecano de Madrid Win",
+        "home_prob": 32.3,
+        "away_prob": 38.8,
+        "draw_prob": 28.9,
+        "date": "2025-10-05 16:30"
+      },
+      {
+        "home_team": "RC Celta de Vigo",
+        "away_team": "Club Atlético de Madrid",
+        "predicted_result": "Club Atlético de Madrid Win",
+        "home_prob": 18.6,
+        "away_prob": 53.9,
+        "draw_prob": 27.5,
+        "date": "2025-10-05 19:00"
       }
     ]
   }
