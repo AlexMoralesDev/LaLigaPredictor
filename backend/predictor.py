@@ -1,13 +1,15 @@
-import requests
-import pandas as pd
-import os 
 import json
+import os
+import warnings
+from collections import defaultdict
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import requests
 from dotenv import load_dotenv
 from sklearn.ensemble import RandomForestClassifier
-import numpy as np
-from collections import defaultdict
-import warnings
+
 warnings.filterwarnings('ignore')
 
 load_dotenv()
@@ -16,7 +18,7 @@ headers = {"X-Auth-Token": API_KEY}
 
 # File paths for tracking
 PREDICTIONS_FILE = 'predictions_history.json'
-README_FILE = 'README.md'
+README_FILE = '../README.md'
 
 class LaLigaPredictor:
     def __init__(self):

@@ -7,7 +7,7 @@ function App() {
       <header className="App-header">
         La Liga Predictor:
       </header>
-      <GameWeekView matches={[{team1: 'Team A', team2: 'Team B'}, {team1: 'Team C', team2: 'Team D'}]} />
+      <GameWeekView/>
     </div>
   );
 }
