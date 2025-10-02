@@ -1,39 +1,50 @@
 {
   "name": "frontend",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
   "dependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
+    "ansi-regex": "^5.0.1",
+    "aria-query": "^5.3.2",
+    "autoprefixer": "^10.4.21",
+    "baseline-browser-mapping": "^2.8.9",
+    "browserslist": "^4.26.2",
+    "caniuse-lite": "^1.0.30001746",
+    "css.escape": "^1.5.1",
+    "dequal": "^2.0.3",
+    "dom-accessibility-api": "^0.5.16",
+    "electron-to-chromium": "^1.5.227",
+    "escalade": "^3.2.0",
+    "fraction.js": "^4.3.7",
+    "indent-string": "^4.0.0",
+    "js-tokens": "^4.0.0",
+    "lz-string": "^1.5.0",
+    "min-indent": "^1.0.1",
+    "nanoid": "^3.3.11",
+    "node-releases": "^2.0.21",
+    "normalize-range": "^0.1.2",
+    "picocolors": "^1.1.1",
+    "postcss": "^8.5.6",
+    "postcss-value-parser": "^4.2.0",
+    "pretty-format": "^27.5.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-scripts": "5.0.1",
+    "react-is": "^17.0.2",
+    "react-scripts": "^0.0.0",
+    "redent": "^3.0.0",
+    "scheduler": "^0.26.0",
+    "source-map-js": "^1.2.1",
+    "strip-indent": "^3.0.0",
+    "tailwindcss": "^4.1.14",
+    "update-browserslist-db": "^1.1.3",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {},
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
