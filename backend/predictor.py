@@ -472,8 +472,12 @@ class LaLigaPredictor:
             
             # Insert new predictions
             for pred in predictions:
+                # Explicitly convert numeric types to standard Python types for JSON serialization
+                home_score_val = pred.get('home_score')
+                away_score_val = pred.get('away_score')
+                
                 data = {
-                    'gameweek': gameweek,
+                    'gameweek': int(gameweek), # Ensure gameweek is a standard integer
                     'home_team': pred['home_team'],
                     'away_team': pred['away_team'],
                     'predicted_result': pred['predicted_result'],
@@ -482,8 +486,8 @@ class LaLigaPredictor:
                     'draw_prob': pred['draw_prob'],
                     'match_date': pred['date'],
                     'actual_result': pred.get('actual_result'),
-                    'home_score': pred.get('home_score'),
-                    'away_score': pred.get('away_score'),
+                    'home_score': int(home_score_val) if pd.notna(home_score_val) else None, # Convert to standard int
+                    'away_score': int(away_score_val) if pd.notna(away_score_val) else None, # Convert to standard int
                     'is_correct': pred.get('correct'),
                     'predicted_at': datetime.now().isoformat()
                 }
@@ -493,7 +497,7 @@ class LaLigaPredictor:
             stats_data = {
                 'training_accuracy': training_accuracy,
                 'last_updated': datetime.now().isoformat(),
-                'current_gameweek': gameweek
+                'current_gameweek': int(gameweek) # Ensure gameweek is a standard integer
             }
             
             # Check if stats exist
@@ -639,8 +643,9 @@ class LaLigaPredictor:
                     actual_result = "Draw"
                 
                 prediction_record['actual_result'] = actual_result
-                prediction_record['home_score'] = int(match['home_score'])
-                prediction_record['away_score'] = int(match['away_score'])
+                # These are the values that need conversion before saving to Supabase
+                prediction_record['home_score'] = match['home_score']
+                prediction_record['away_score'] = match['away_score']
                 prediction_record['correct'] = predicted_result == actual_result
             
             matches_predictions.append(prediction_record)
