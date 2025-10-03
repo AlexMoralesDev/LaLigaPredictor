@@ -9,72 +9,52 @@ import {
 } from "@/components/ui/select";
 import MatchCard from "@/components/MatchCard";
 import StatsCard from "@/components/StatsCard";
-import { Prediction } from "@/types/prediction";
 import { Trophy, Target, TrendingUp } from "lucide-react";
-import { fetchAllPredictions, fetchModelStats } from "@/lib/api"; // ⬅️ IMPORT API FUNCTIONS
 
-// The correct, singular declaration of the isCorrect helper function
-const isCorrect = (prediction: Prediction) => {
-  // Check if actual scores exist (i.e., the match is complete)
+// Assuming these are your API functions and types
+import { fetchAllPredictions, fetchModelStats } from "@/lib/api";
+import { Prediction } from "@/types/prediction";
+
+// Helper function (Consolidated and simplified)
+const isCorrect = (prediction: Prediction): boolean => {
+  // Only check for correctness if actual scores exist (match is complete)
   if (
-    prediction.actualHomeScore === undefined ||
-    prediction.actualAwayScore === undefined ||
     prediction.actualHomeScore === null ||
     prediction.actualAwayScore === null
   ) {
     return false;
   }
 
-  // Determine predicted result based on *predicted* scores (or implied scores from the model)
-  // NOTE: This assumes that for current predictions, the model output is used, but for historical data
-  // the model only saved 'home_score'/'away_score' when the match was complete.
-  // If the MatchCard relies on actual scores for historical accuracy, we need to ensure this logic is sound.
-  // Given the Python script saves the *actual* scores to home_score/away_score for completed matches,
-  // the comparison should use the actual result vs the predicted string result.
-
-  // The Python script saves a boolean `is_correct` field. It's much simpler to use that.
+  // Use the Python-calculated 'isCorrect' boolean from the database if available
   if (typeof prediction.isCorrect === "boolean") {
     return prediction.isCorrect;
   }
 
-  // Fallback logic if isCorrect field is missing/null, comparing the predicted string result with the actual result.
-  // 1. Determine actual match outcome
+  // Fallback: Compare predicted result (home/away/draw) to actual result
+  const predictedResult =
+    prediction.predictedHomeScore > prediction.predictedAwayScore
+      ? "home"
+      : prediction.predictedHomeScore < prediction.predictedAwayScore
+        ? "away"
+        : "draw";
+
   const actualResult =
     prediction.actualHomeScore > prediction.actualAwayScore!
-      ? "HOME_TEAM"
+      ? "home"
       : prediction.actualHomeScore < prediction.actualAwayScore!
-        ? "AWAY_TEAM"
-        : "DRAW";
-
-  // 2. Map predicted string to match the actual result for comparison
-  const predictedResult = prediction.predictedResult.includes(
-    prediction.homeTeam,
-  )
-    ? "HOME_TEAM"
-    : prediction.predictedResult.includes(prediction.awayTeam)
-      ? "AWAY_TEAM"
-      : "DRAW";
+        ? "away"
+        : "draw";
 
   return predictedResult === actualResult;
 };
-console.log("Index component rendering started.");
 
+// Component Start
 const Index = () => {
-  // ...const Index = () => {
   const [selectedTeam, setSelectedTeam] = useState("All Teams");
   const [sortBy, setSortBy] = useState("date");
   const [allPredictions, setAllPredictions] = useState<Prediction[]>([]);
   const [modelStats, setModelStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  const laLigaTeams = useMemo(() => {
-    const teams = new Set<string>();
-    allPredictions.forEach((p) => {
-      teams.add(p.homeTeam);
-      teams.add(p.awayTeam);
-    });
-    return ["All Teams", ...Array.from(teams).sort()];
-  }, [allPredictions]);
 
   // 1. Fetch data on component mount
   useEffect(() => {
@@ -96,43 +76,41 @@ const Index = () => {
     loadData();
   }, []);
 
-  // 2. Separate current and historical predictions
-  const { currentPredictions, historicalPredictions } = useMemo(() => {
-    const current: Prediction[] = [];
-    const historical: Prediction[] = [];
+  // 2. Separate current and historical predictions & generate team list
+  const { currentPredictions, historicalPredictions, laLigaTeams } =
+    useMemo(() => {
+      const current: Prediction[] = [];
+      const historical: Prediction[] = [];
+      const teams = new Set<string>();
 
-    const currentGW = modelStats?.currentGameweek;
+      const currentGW = modelStats?.currentGameweek;
 
-    allPredictions.forEach((p) => {
-      // The Python script saves 'home_score'/'away_score' ONLY for completed matches,
-      // and sets 'gameweek' to the current gameweek for both current and completed matches in that week.
+      allPredictions.forEach((p) => {
+        teams.add(p.homeTeam);
+        teams.add(p.awayTeam);
 
-      // Match is complete if actualHomeScore (mapped from home_score) is not null.
-      if (p.actualHomeScore !== null) {
-        historical.push(p);
-      } else if (p.gameweek === currentGW && p.actualHomeScore === null) {
-        // Match is part of the current gameweek and has no score yet (a true prediction)
-        current.push(p);
-      }
-      // Note: Matches from past gameweeks that haven't been completed will be ignored,
-      // which is usually correct for a live prediction dashboard.
-    });
+        // Match is complete if actualHomeScore is not null.
+        if (p.actualHomeScore !== null) {
+          historical.push(p);
+        } else if (p.gameweek === currentGW && p.actualHomeScore === null) {
+          current.push(p);
+        }
+      });
 
-    return {
-      currentPredictions: current,
-      // Sort historical by date descending for better viewing
-      historicalPredictions: historical.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-      ),
-    };
-  }, [allPredictions, modelStats]);
+      return {
+        currentPredictions: current,
+        historicalPredictions: historical.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        ),
+        laLigaTeams: ["All Teams", ...Array.from(teams).sort()],
+      };
+    }, [allPredictions, modelStats]);
 
-  // 3. Update calculateStats to use fetched data
-  const calculateStats = () => {
+  // 3. Calculate Stats
+  const calculateStats = useMemo(() => {
     const withActuals = historicalPredictions.filter(
       (p) => p.actualHomeScore !== null && p.actualHomeScore !== undefined,
     );
-    // Use the `isCorrect` field from the database if available, otherwise use the function logic.
     const correct = withActuals.filter(isCorrect).length;
     const accuracy =
       withActuals.length > 0
@@ -142,6 +120,7 @@ const Index = () => {
     const historicalConfidence = historicalPredictions
       .map((p) => p.confidence)
       .filter((c) => c !== undefined && c !== null);
+
     const avgConfidence =
       historicalConfidence.length > 0
         ? (
@@ -160,10 +139,9 @@ const Index = () => {
         : "-",
       currentGameweek: modelStats?.currentGameweek || "-",
     };
-  };
+  }, [historicalPredictions, modelStats]);
 
-  const stats = calculateStats();
-
+  // 4. Filter and Sort Predictions
   const filterPredictions = (predictions: Prediction[]) => {
     let filtered = [...predictions];
 
@@ -176,54 +154,70 @@ const Index = () => {
     if (sortBy === "confidence") {
       filtered.sort((a, b) => b.confidence - a.confidence);
     } else if (sortBy === "accuracy") {
-      // Sorting by accuracy is only meaningful for historical data, where isCorrect returns a boolean
       filtered.sort((a, b) => {
         const aCorrect = isCorrect(a);
         const bCorrect = isCorrect(b);
         return (bCorrect ? 1 : 0) - (aCorrect ? 1 : 0);
       });
     } else {
-      // Default sort by date ascending for current, or reverse for history (already handled in useMemo)
+      // Default sort by date ascending for current, or reverse for history
       filtered.sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
     }
-
     return filtered;
   };
 
-  // 4. Handle Loading State
+  // HEADER COMPONENT (Extracted for use in both loading and loaded states)
+  const Header = (
+    <header className="bg-gradient-primary border-b border-border">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-2">
+          <Trophy className="w-8 h-8 text-foreground" />
+          <h1 className="text-4xl font-bold text-foreground">
+            La Liga Predictor
+          </h1>
+        </div>
+        <p className="text-foreground/80">
+          AI-powered match predictions with historical accuracy tracking
+        </p>
+      </div>
+    </header>
+  );
+
+  // 5. Handle Loading State
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-xl">
-        Loading Predictions...
+      <div className="min-h-screen bg-background">
+        {Header}
+        <div className="flex items-center justify-center text-xl py-12">
+          Loading Predictions...
+        </div>
       </div>
     );
   }
 
-  // 5. Render component
+  // 6. Main Render
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      {/* ... existing header code ... */}
-
+      {Header} {/* The Header is now here, guaranteed to show */}
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <StatsCard
             title="Historical Accuracy"
-            value={`${stats.accuracy}%`}
-            subtitle={`${stats.correctPredictions}/${stats.totalPredictions} correct`}
+            value={`${calculateStats.accuracy}%`}
+            subtitle={`${calculateStats.correctPredictions}/${calculateStats.totalPredictions} correct`}
             trend="up"
           />
           <StatsCard
             title="Avg Confidence"
-            value={`${stats.avgConfidence}%`}
-            subtitle={`Model Training: ${stats.trainingAccuracy}%`}
+            value={`${calculateStats.avgConfidence}%`}
+            subtitle={`Model Training: ${calculateStats.trainingAccuracy}%`}
           />
           <StatsCard
             title="Current Gameweek"
-            value={stats.currentGameweek}
+            value={calculateStats.currentGameweek}
             subtitle={`${currentPredictions.length} matches to be played`}
           />
           <StatsCard
@@ -233,30 +227,33 @@ const Index = () => {
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-            <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
-              <SelectValue placeholder="Filter by team" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border-border z-50">
-              {laLigaTeams.map((team) => (
-                <SelectItem key={team} value={team}>
-                  {team}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border-border z-50">
-              <SelectItem value="date">Date</SelectItem>
-              <SelectItem value="confidence">Confidence</SelectItem>
-              <SelectItem value="accuracy">Accuracy (History)</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Filters and Sort */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
+          <div className="flex space-x-4 w-full sm:w-auto">
+            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
+                <SelectValue placeholder="Filter by Team" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                {laLigaTeams.map((team) => (
+                  <SelectItem key={team} value={team}>
+                    {team}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                <SelectItem value="date">Date</SelectItem>
+                <SelectItem value="confidence">Confidence</SelectItem>
+                <SelectItem value="accuracy">Accuracy (History)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Tabs */}
