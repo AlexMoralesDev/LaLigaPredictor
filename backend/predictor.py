@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import warnings
 from collections import defaultdict
 from datetime import datetime
@@ -9,53 +10,108 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from sklearn.ensemble import RandomForestClassifier
+from supabase import Client, create_client
 
 warnings.filterwarnings('ignore')
 
 load_dotenv()
 API_KEY = os.getenv('FOOTBALL_API_KEY')
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
+# Validate environment variables
+if not API_KEY:
+    print("ERROR: FOOTBALL_API_KEY not found in .env file")
+    exit(1)
+if not SUPABASE_URL:
+    print("ERROR: SUPABASE_URL not found in .env file")
+    exit(1)
+if not SUPABASE_KEY:
+    print("ERROR: SUPABASE_KEY not found in .env file")
+    exit(1)
+
 headers = {"X-Auth-Token": API_KEY}
 
-# File paths for tracking
-PREDICTIONS_FILE = 'predictions_history.json'
-README_FILE = '../README.md'
+# Initialize Supabase client
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("✓ Supabase client initialized")
+except Exception as e:
+    print(f"ERROR: Failed to initialize Supabase client: {e}")
+    exit(1)
 
 class LaLigaPredictor:
     def __init__(self):
-        self.predictions_history = self.load_predictions_history()
-        self.current_gameweek_predictions = {}  # Separate storage for current gameweek
+        pass
         
-    def load_predictions_history(self):
-        """Load existing predictions history from JSON file"""
-        if os.path.exists(PREDICTIONS_FILE):
-            try:
-                with open(PREDICTIONS_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except:
-                return {}
-        return {}
-    
-    def save_predictions_history(self):
-        """Save predictions history to JSON file"""
-        with open(PREDICTIONS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(self.predictions_history, f, indent=2, ensure_ascii=False)
-    
     def get_la_liga_data(self):
-        """Fetch La Liga data from API"""
+        """Fetch La Liga data from API with retry logic"""
         print("Fetching data from API...")
         
-        # Get La Liga matches for training (2023 and 2024) and current season (2025)
-        training_2023_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2023"
-        training_2024_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2024"
-        current_2025_url = "https://api.football-data.org/v4/competitions/2014/matches?season=2025"
+        urls = {
+            '2023': "https://api.football-data.org/v4/competitions/2014/matches?season=2023",
+            '2024': "https://api.football-data.org/v4/competitions/2014/matches?season=2024",
+            '2025': "https://api.football-data.org/v4/competitions/2014/matches?season=2025"
+        }
         
-        training_2023_response = requests.get(training_2023_url, headers=headers)
-        training_2024_response = requests.get(training_2024_url, headers=headers)
-        current_2025_response = requests.get(current_2025_url, headers=headers)
+        responses = {}
         
-        return (training_2023_response.json(), 
-                training_2024_response.json(), 
-                current_2025_response.json())
+        for season, url in urls.items():
+            max_retries = 3
+            retry_delay = 2
+            
+            for attempt in range(max_retries):
+                try:
+                    print(f"  Fetching {season} season data (attempt {attempt + 1}/{max_retries})...")
+                    response = requests.get(url, headers=headers, timeout=10)
+                    
+                    if response.status_code == 200:
+                        responses[season] = response.json()
+                        print(f"  ✓ Successfully fetched {season} season data")
+                        break
+                    elif response.status_code == 429:
+                        print(f"  Rate limit hit. Waiting {retry_delay * 2} seconds...")
+                        time.sleep(retry_delay * 2)
+                    elif response.status_code == 403:
+                        print(f"  ERROR: Access forbidden. Check your API key.")
+                        exit(1)
+                    else:
+                        print(f"  Warning: Got status code {response.status_code}")
+                        if attempt < max_retries - 1:
+                            time.sleep(retry_delay)
+                        
+                except requests.exceptions.ConnectionError as e:
+                    print(f"  ERROR: Connection failed - {str(e)[:100]}")
+                    print(f"  This usually means:")
+                    print(f"    1. No internet connection")
+                    print(f"    2. DNS resolution failure")
+                    print(f"    3. Firewall blocking the connection")
+                    print(f"    4. VPN or proxy issues")
+                    
+                    if attempt < max_retries - 1:
+                        print(f"  Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"\n  Failed to connect after {max_retries} attempts.")
+                        print(f"  Please check your network connection and try again.")
+                        exit(1)
+                        
+                except requests.exceptions.Timeout:
+                    print(f"  Request timed out")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"  Failed after {max_retries} timeout attempts")
+                        exit(1)
+                        
+                except Exception as e:
+                    print(f"  Unexpected error: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                    else:
+                        raise
+        
+        return responses['2023'], responses['2024'], responses['2025']
     
     def create_matches_dataframe(self, data):
         """Create DataFrame from API response"""
@@ -102,9 +158,7 @@ class LaLigaPredictor:
             home_score = match['home_score']
             away_score = match['away_score']
             result = match['result']
-            matchday = match['matchday']
             
-            # Skip if no result (upcoming match)
             if pd.isna(result):
                 home_stats = team_stats[home_id]
                 away_stats = team_stats[away_id]
@@ -408,251 +462,95 @@ class LaLigaPredictor:
         
         return features
     
-    def find_current_gameweek(self, all_2025_matches):
-        """Find the current gameweek (earliest with incomplete matches)"""
-        for gw in sorted(all_2025_matches['matchday'].unique()):
-            if gw < 7:
-                continue
-            gw_matches = all_2025_matches[all_2025_matches['matchday'] == gw]
-            incomplete_matches = len(gw_matches[gw_matches['result'].isna()])
+    def save_to_supabase(self, gameweek, predictions, training_accuracy):
+        """Save predictions to Supabase"""
+        try:
+            print(f"\nSaving predictions to Supabase...")
             
-            if incomplete_matches > 0:
-                return gw, f"Current gameweek with {incomplete_matches} incomplete matches"
-        
-        return None, "No gameweeks with incomplete matches found"
-    
-    def update_current_gameweek_with_results(self, current_2025_data):
-        """Update current gameweek predictions with completed results"""
-        if not self.current_gameweek_predictions:
-            return
-        
-        current_gw = self.current_gameweek_predictions.get('gameweek')
-        if not current_gw:
-            return
-        
-        for match in current_2025_data['matches']:
-            if match['matchday'] != current_gw:
-                continue
-                
-            if match['score']['winner'] is not None and match['status'] == 'FINISHED':
-                for prediction in self.current_gameweek_predictions['matches']:
-                    if (prediction['home_team'] == match['homeTeam']['name'] and 
-                        prediction['away_team'] == match['awayTeam']['name']):
-                        
-                        if match['score']['winner'] == 'HOME_TEAM':
-                            actual_result = f"{match['homeTeam']['name']} Win"
-                        elif match['score']['winner'] == 'AWAY_TEAM':
-                            actual_result = f"{match['awayTeam']['name']} Win"
-                        else:
-                            actual_result = "Draw"
-                        
-                        prediction['actual_result'] = actual_result
-                        prediction['home_score'] = match['score']['fullTime']['home']
-                        prediction['away_score'] = match['score']['fullTime']['away']
-                        prediction['correct'] = prediction['predicted_result'] == actual_result
-    
-    def check_if_gameweek_complete(self, current_2025_data, gameweek):
-        """Check if all matches in a gameweek are completed"""
-        matches_in_gw = [m for m in current_2025_data['matches'] if m['matchday'] == gameweek]
-        if not matches_in_gw:
-            return False
-        
-        for match in matches_in_gw:
-            if match['score']['winner'] is None or match['status'] != 'FINISHED':
-                return False
-        return True
-    
-    def move_to_history(self):
-        """Move current gameweek predictions to history once all matches are complete"""
-        if not self.current_gameweek_predictions:
-            return False
-        
-        gameweek = self.current_gameweek_predictions['gameweek']
-        gameweek_key = str(gameweek)
-        
-        # Only move to history if not already there
-        if gameweek_key not in self.predictions_history:
-            self.predictions_history[gameweek_key] = {
-                'date_predicted': self.current_gameweek_predictions['date_predicted'],
-                'matches': self.current_gameweek_predictions['matches']
+            # Delete existing predictions for this gameweek
+            supabase.table('predictions').delete().eq('gameweek', gameweek).execute()
+            
+            # Insert new predictions
+            for pred in predictions:
+                data = {
+                    'gameweek': gameweek,
+                    'home_team': pred['home_team'],
+                    'away_team': pred['away_team'],
+                    'predicted_result': pred['predicted_result'],
+                    'home_prob': pred['home_prob'],
+                    'away_prob': pred['away_prob'],
+                    'draw_prob': pred['draw_prob'],
+                    'match_date': pred['date'],
+                    'actual_result': pred.get('actual_result'),
+                    'home_score': pred.get('home_score'),
+                    'away_score': pred.get('away_score'),
+                    'is_correct': pred.get('correct'),
+                    'predicted_at': datetime.now().isoformat()
+                }
+                supabase.table('predictions').insert(data).execute()
+            
+            # Update model stats
+            stats_data = {
+                'training_accuracy': training_accuracy,
+                'last_updated': datetime.now().isoformat(),
+                'current_gameweek': gameweek
             }
-            self.save_predictions_history()
-            print(f"Moved gameweek {gameweek} to history")
-            self.current_gameweek_predictions = {}
-            return True
-        return False
-    
-    def calculate_accuracy(self):
-        """Calculate overall accuracy from predictions history"""
-        total_predictions = 0
-        correct_predictions = 0
-        
-        for gameweek_data in self.predictions_history.values():
-            for match in gameweek_data['matches']:
-                if 'actual_result' in match:
-                    total_predictions += 1
-                    if match['correct']:
-                        correct_predictions += 1
-        
-        if total_predictions == 0:
-            return 0.0
-        return (correct_predictions / total_predictions) * 100
-    
-    def generate_readme(self, training_accuracy):
-        """Generate README.md file with current predictions and history"""
-        
-        overall_accuracy = self.calculate_accuracy()
-        
-        readme_content = f"""# La Liga Match Predictor
-
-An AI-powered machine learning model that predicts La Liga match outcomes using advanced statistical analysis.
-
-## Current Status
-
-**Last Updated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}  
-**Model Training Accuracy:** {training_accuracy:.1f}%  
-**Overall Prediction Accuracy:** {overall_accuracy:.1f}%  
-**Total Matches Predicted:** {sum(len(gw['matches']) for gw in self.predictions_history.values()) + (len(self.current_gameweek_predictions.get('matches', [])))}  
-**Total Matches with Results:** {sum(len([m for m in gw['matches'] if 'actual_result' in m]) for gw in self.predictions_history.values()) + len([m for m in self.current_gameweek_predictions.get('matches', []) if 'actual_result' in m])}  
-
-"""
-
-        # Add current gameweek predictions
-        if self.current_gameweek_predictions:
-            current_gw = self.current_gameweek_predictions['gameweek']
-            readme_content += f"## Current Gameweek Predictions\n\n### Gameweek {current_gw}\n\n"
             
-            for pred in self.current_gameweek_predictions['matches']:
-                if 'actual_result' in pred:
-                    status_icon = "✅" if pred.get('correct', False) else "❌"
-                    status_text = f"**Result:** {pred['actual_result']} ({pred.get('home_score', '?')}-{pred.get('away_score', '?')}) - {'CORRECT' if pred.get('correct', False) else 'WRONG'}"
-                else:
-                    status_icon = "⏳"
-                    status_text = "**Status:** Awaiting result"
-                
-                readme_content += f"""{status_icon} **{pred['home_team']} vs {pred['away_team']}**  
-{pred['date']}  
-**Prediction:** {pred['predicted_result']}  
-{status_text}  
-Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_prob']:.1f}% | {pred['away_team']} {pred['away_prob']:.1f}%  
-
-"""
-        else:
-            readme_content += "## Current Gameweek Predictions\n\nNo upcoming matches to predict.\n\n"
-        
-        # Add prediction history
-        readme_content += "## Prediction History\n\n"
-        
-        if self.predictions_history:
-            sorted_gameweeks = sorted(self.predictions_history.items(), key=lambda x: int(x[0]), reverse=True)
+            # Check if stats exist
+            existing_stats = supabase.table('model_stats').select('id').limit(1).execute()
             
-            for gameweek_str, gw_data in sorted_gameweeks:
-                gameweek = int(gameweek_str)
-                readme_content += f"### Gameweek {gameweek}\n"
-                readme_content += f"*Predicted on: {gw_data['date_predicted']}*\n\n"
-                
-                gw_total = len(gw_data['matches'])
-                gw_correct = sum(1 for match in gw_data['matches'] if match.get('correct', False))
-                gw_completed = sum(1 for match in gw_data['matches'] if 'actual_result' in match)
-                
-                if gw_completed > 0:
-                    gw_accuracy = (gw_correct / gw_completed) * 100
-                    readme_content += f"**Final Accuracy: {gw_accuracy:.1f}% ({gw_correct}/{gw_completed} correct)**\n\n"
-                else:
-                    readme_content += f"**Status: {gw_total} matches predicted, awaiting results**\n\n"
-                
-                for match in gw_data['matches']:
-                    if 'actual_result' in match:
-                        status_icon = "✅" if match.get('correct', False) else "❌"
-                        result_text = f"**Final Result:** {match['actual_result']} ({match.get('home_score', '?')}-{match.get('away_score', '?')})"
-                    else:
-                        status_icon = "⏳"
-                        result_text = "**Status:** Result pending"
-                    
-                    readme_content += f"{status_icon} **{match['home_team']} vs {match['away_team']}**  \n"
-                    readme_content += f"Predicted: {match['predicted_result']}  \n"
-                    readme_content += f"{result_text}  \n"
-                    readme_content += f"Confidence: {match['home_prob']:.1f}% | {match['draw_prob']:.1f}% | {match['away_prob']:.1f}%\n\n"
-                
-                readme_content += "---\n\n"
-        else:
-            readme_content += "No historical predictions available yet.\n\n"
-        
-        readme_content += """## Model Information
-
-### Features Used
-- Points per game difference
-- Goal difference per game
-- Home/Away venue-specific performance
-- Attack vs Defense matchup analysis
-- Recent form (last 3 and 5 matches)
-- Performance against top/bottom teams
-- Clean sheet rates and defensive metrics
-- Expected goals calculations
-
-### Algorithm
-- **Random Forest Classifier** with 300 trees
-- Trained on 2+ seasons of La Liga data
-- Features engineered for maximum predictive power
-- Handles class imbalance with balanced weights
-
----
-
-*Predictions are for entertainment purposes only. Past performance does not guarantee future results.*
-"""
-        
-        with open(README_FILE, 'w', encoding='utf-8') as f:
-            f.write(readme_content)
-        
-        print(f"README.md updated successfully!")
+            if existing_stats.data:
+                supabase.table('model_stats').update(stats_data).eq('id', existing_stats.data[0]['id']).execute()
+            else:
+                supabase.table('model_stats').insert(stats_data).execute()
+            
+            print(f"✅ Successfully saved {len(predictions)} predictions to Supabase")
+            
+        except Exception as e:
+            print(f"❌ Error saving to Supabase: {e}")
+            print(f"   Full error details: {str(e)}")
     
-    def run_prediction(self, force_gameweek=None):
-        """Main method to run the prediction process"""
+    def run_prediction(self):
+        """Main prediction method"""
+        print("\n" + "="*60)
+        print("LA LIGA PREDICTOR - Starting...")
+        print("="*60 + "\n")
+        
         training_2023_data, training_2024_data, current_2025_data = self.get_la_liga_data()
         
+        print("\nCreating dataframes...")
         training_2023_df = self.create_matches_dataframe(training_2023_data)
         training_2024_df = self.create_matches_dataframe(training_2024_data)
         current_2025_df = self.create_matches_dataframe(current_2025_data)
         
-        # Update current gameweek with results
-        self.update_current_gameweek_with_results(current_2025_data)
-        
-        # Check if current gameweek is complete and move to history
-        if self.current_gameweek_predictions:
-            current_gw = self.current_gameweek_predictions['gameweek']
-            if self.check_if_gameweek_complete(current_2025_data, current_gw):
-                self.move_to_history()
-        
-        # Find current gameweek to predict
+        # Find current gameweek
         all_2025_matches = current_2025_df.copy()
+        current_gameweek = None
         
-        if force_gameweek is not None:
-            current_gameweek = force_gameweek
-            print(f"FORCING prediction of gameweek: {current_gameweek}")
-            self.current_gameweek_predictions = {}
-        else:
-            current_gameweek, message = self.find_current_gameweek(all_2025_matches)
-            if current_gameweek is None:
-                print(f"No gameweek to predict: {message}")
-                self.generate_readme(0.0)
-                return self.calculate_accuracy()
-            print(f"Current gameweek: {current_gameweek} - {message}")
+        print("\nSearching for current gameweek...")
+        for gw in sorted(all_2025_matches['matchday'].unique()):
+            if gw < 7:
+                continue
+            gw_matches = all_2025_matches[all_2025_matches['matchday'] == gw]
+            incomplete = len(gw_matches[gw_matches['result'].isna()])
+            
+            if incomplete > 0:
+                current_gameweek = gw
+                print(f"✓ Found gameweek {gw} with {incomplete} incomplete matches")
+                break
         
-        # Check if we already have predictions for this gameweek
-        if self.current_gameweek_predictions and self.current_gameweek_predictions.get('gameweek') == current_gameweek:
-            print(f"Already have predictions for gameweek {current_gameweek}. Updating with results...")
-            self.generate_readme(0.0)
-            return self.calculate_accuracy()
+        if current_gameweek is None:
+            print("❌ No gameweek to predict - all matches may be completed")
+            return
         
         # Get matches for current gameweek
         gameweek_matches = all_2025_matches[all_2025_matches['matchday'] == current_gameweek].copy()
-        print(f"Total matches in gameweek {current_gameweek}: {len(gameweek_matches)}")
         
-        # Filter training data
+        # Prepare training data
+        print("\nPreparing training data...")
         training_2023_df = training_2023_df[training_2023_df['result'].notna()].copy()
         training_2024_df = training_2024_df[training_2024_df['result'].notna()].copy()
         
-        # Training uses all completed matches before current gameweek
         training_matches = pd.concat([
             training_2023_df, 
             training_2024_df, 
@@ -662,21 +560,23 @@ Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_p
             ]
         ]).sort_values('date').reset_index(drop=True)
         
-        print(f"Training on {len(training_matches)} completed matches")
+        print(f"✓ Training on {len(training_matches)} completed matches")
         
-        # Combine training with current gameweek for stats calculation
-        all_data_with_current = pd.concat([training_matches, gameweek_matches]).sort_values('date').reset_index(drop=True)
+        # Calculate stats
+        print("\nCalculating team statistics...")
+        all_data = pd.concat([training_matches, gameweek_matches]).sort_values('date').reset_index(drop=True)
+        all_data_with_stats = self.calculate_predictive_stats(all_data.copy())
         
-        print("Calculating predictive statistics...")
-        all_data_with_stats = self.calculate_predictive_stats(all_data_with_current.copy())
+        training_data = all_data_with_stats.iloc[:len(training_matches)].copy()
+        prediction_data = all_data_with_stats.iloc[len(training_matches):].copy()
         
-        training_data_with_stats = all_data_with_stats.iloc[:len(training_matches)].copy()
-        prediction_data_with_stats = all_data_with_stats.iloc[len(training_matches):].copy()
+        # Create features
+        print("Creating features...")
+        training_features = self.create_focused_features(training_data)
+        training_target = self.create_target(training_data)
+        prediction_features = self.create_focused_features(prediction_data)
         
-        training_features = self.create_focused_features(training_data_with_stats)
-        training_target = self.create_target(training_data_with_stats)
-        prediction_features = self.create_focused_features(prediction_data_with_stats)
-        
+        # Train model
         print("Training Random Forest model...")
         rf = RandomForestClassifier(
             n_estimators=300,
@@ -691,18 +591,20 @@ Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_p
         
         rf.fit(training_features, training_target)
         
+        # Make predictions
+        print("Making predictions...")
         predictions = rf.predict(prediction_features)
-        prediction_probabilities = rf.predict_proba(prediction_features)
+        probabilities = rf.predict_proba(prediction_features)
         
         training_accuracy = rf.score(training_features, training_target) * 100
         
         print(f"\n{'='*60}")
-        print(f"PREDICTIONS FOR GAMEWEEK {current_gameweek}")
-        print(f"{'='*60}")
+        print(f"GAMEWEEK {current_gameweek} PREDICTIONS")
+        print(f"{'='*60}\n")
         
         matches_predictions = []
         
-        for i, (idx, match) in enumerate(prediction_data_with_stats.iterrows()):
+        for i, (idx, match) in enumerate(prediction_data.iterrows()):
             home_team = match['home_team_name']
             away_team = match['away_team_name']
             
@@ -713,11 +615,9 @@ Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_p
             else:
                 predicted_result = "Draw"
             
-            home_prob = prediction_probabilities[i][1] * 100
-            away_prob = prediction_probabilities[i][0] * 100
-            draw_prob = prediction_probabilities[i][2] * 100
-            
-            match_date = match['date'].strftime('%Y-%m-%d %H:%M')
+            home_prob = probabilities[i][1] * 100
+            away_prob = probabilities[i][0] * 100
+            draw_prob = probabilities[i][2] * 100
             
             prediction_record = {
                 'home_team': home_team,
@@ -726,10 +626,10 @@ Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_p
                 'home_prob': round(home_prob, 1),
                 'away_prob': round(away_prob, 1),
                 'draw_prob': round(draw_prob, 1),
-                'date': match_date
+                'date': match['date'].isoformat()
             }
             
-            # Check if match is already completed
+            # Check if match is completed
             if pd.notna(match['result']):
                 if match['result'] == 'HOME_TEAM':
                     actual_result = f"{home_team} Win"
@@ -745,58 +645,25 @@ Probabilities: {pred['home_team']} {pred['home_prob']:.1f}% | Draw {pred['draw_p
             
             matches_predictions.append(prediction_record)
             
-            status = "✅" if prediction_record.get('correct') else "❌" if 'actual_result' in prediction_record else "⏳"
-            print(f"\n{status} {match_date}")
             print(f"{home_team} vs {away_team}")
             print(f"Prediction: {predicted_result}")
-            
-            if 'actual_result' in prediction_record:
-                print(f"Actual: {prediction_record['actual_result']} ({prediction_record['home_score']}-{prediction_record['away_score']})")
-            
-            print(f"Probabilities: {home_team} {home_prob:.1f}% | Draw {draw_prob:.1f}% | {away_team} {away_prob:.1f}%")
+            print(f"Confidence: {home_team} {home_prob:.1f}% | Draw {draw_prob:.1f}% | {away_team} {away_prob:.1f}%\n")
         
-        # Save to current gameweek predictions
-        self.current_gameweek_predictions = {
-            'gameweek': current_gameweek,
-            'date_predicted': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'matches': matches_predictions
-        }
+        # Save to Supabase
+        self.save_to_supabase(current_gameweek, matches_predictions, training_accuracy)
         
-        # Check if gameweek is already complete
-        if self.check_if_gameweek_complete(current_2025_data, current_gameweek):
-            self.move_to_history()
-        
-        self.generate_readme(training_accuracy)
-        
-        overall_accuracy = self.calculate_accuracy()
         print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        print(f"Overall prediction accuracy: {overall_accuracy:.1f}%")
-        print(f"Generated predictions for gameweek {current_gameweek}")
-        print(f"Model training accuracy: {training_accuracy:.1f}%")
-        
-        return overall_accuracy
+        print(f"Training Accuracy: {training_accuracy:.1f}%")
+        print(f"Predictions saved successfully!")
+        print(f"{'='*60}\n")
 
 if __name__ == "__main__":
-    import sys
-    
-    predictor = LaLigaPredictor()
-    
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "clean":
-            print("Cleaning predictions history...")
-            predictor.predictions_history = {}
-            predictor.current_gameweek_predictions = {}
-            predictor.save_predictions_history()
-            print("Predictions history cleared!")
-        else:
-            try:
-                force_gw = int(sys.argv[1])
-                print(f"Forcing prediction of gameweek {force_gw}")
-                predictor.run_prediction(force_gameweek=force_gw)
-            except ValueError:
-                print("Invalid gameweek number. Use 'clean' to clear history or a number for specific gameweek.")
-                predictor.run_prediction()
-    else:
+    try:
+        predictor = LaLigaPredictor()
         predictor.run_prediction()
+    except KeyboardInterrupt:
+        print("\n\nProcess interrupted by user")
+    except Exception as e:
+        print(f"\n❌ Fatal error: {e}")
+        import traceback
+        traceback.print_exc()
