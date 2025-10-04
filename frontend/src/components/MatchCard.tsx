@@ -9,6 +9,32 @@ interface MatchCardProps {
 }
 
 const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
+  // Determine colors based on probability ranking
+  const getProbabilityColors = () => {
+    const probs = [
+      { name: "home", value: prediction.homeWinProbability, label: "Home" },
+      { name: "draw", value: prediction.drawProbability, label: "Draw" },
+      { name: "away", value: prediction.awayWinProbability, label: "Away" },
+    ];
+
+    // Sort by probability (highest to lowest)
+    probs.sort((a, b) => b.value - a.value);
+
+    // Assign colors: highest = green, middle = yellow, lowest = red
+    const colorMap: Record<string, string> = {};
+    colorMap[probs[0].name] = "bg-green-500"; // Highest
+    colorMap[probs[1].name] = "bg-yellow-500"; // Middle
+    colorMap[probs[2].name] = "bg-red-500"; // Lowest
+
+    return {
+      homeColor: colorMap["home"],
+      drawColor: colorMap["draw"],
+      awayColor: colorMap["away"],
+    };
+  };
+
+  const colors = getProbabilityColors();
+
   const isPredictionCorrect = () => {
     if (!showActual || prediction.actualHomeScore === undefined) return null;
 
@@ -115,15 +141,15 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
         <div className="w-full bg-secondary rounded-full h-3 overflow-hidden flex">
           <div
-            className="bg-green-500 h-full transition-all duration-500"
+            className={`${colors.homeColor} h-full transition-all duration-500`}
             style={{ width: `${prediction.homeWinProbability}%` }}
           />
           <div
-            className="bg-yellow-500 h-full transition-all duration-500"
+            className={`${colors.drawColor} h-full transition-all duration-500`}
             style={{ width: `${prediction.drawProbability}%` }}
           />
           <div
-            className="bg-red-500 h-full transition-all duration-500"
+            className={`${colors.awayColor} h-full transition-all duration-500`}
             style={{ width: `${prediction.awayWinProbability}%` }}
           />
         </div>
