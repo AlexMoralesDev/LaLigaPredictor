@@ -49,8 +49,25 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
   const colors = getProbabilityColors();
 
   const isPredictionCorrect = () => {
-    if (!showActual || prediction.actualHomeScore === undefined) return null;
+    // Return null if not showing actual results or if actual scores don't exist
+    if (
+      !showActual ||
+      prediction.actualHomeScore === null ||
+      prediction.actualHomeScore === undefined
+    )
+      return null;
+    if (
+      prediction.actualAwayScore === null ||
+      prediction.actualAwayScore === undefined
+    )
+      return null;
 
+    // Use the isCorrect field from the database if available
+    if (typeof prediction.isCorrect === "boolean") {
+      return prediction.isCorrect;
+    }
+
+    // Fallback: Calculate correctness based on predicted vs actual result
     const predictedResult =
       prediction.predictedHomeScore > prediction.predictedAwayScore
         ? "home"
@@ -59,9 +76,9 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
           : "draw";
 
     const actualResult =
-      prediction.actualHomeScore > prediction.actualAwayScore!
+      prediction.actualHomeScore > prediction.actualAwayScore
         ? "home"
-        : prediction.actualHomeScore < prediction.actualAwayScore!
+        : prediction.actualHomeScore < prediction.actualAwayScore
           ? "away"
           : "draw";
 
