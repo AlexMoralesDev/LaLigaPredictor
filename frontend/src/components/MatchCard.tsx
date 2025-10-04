@@ -2,6 +2,8 @@ import { Prediction } from "@/types/prediction";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { getTeamLogo } from "@/lib/teamLogos";
+import { useState } from "react";
 
 interface MatchCardProps {
   prediction: Prediction;
@@ -9,6 +11,17 @@ interface MatchCardProps {
 }
 
 const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
+  const [homeLogoError, setHomeLogoError] = useState(false);
+  const [awayLogoError, setAwayLogoError] = useState(false);
+
+  // Get logo URLs with error logging
+  const homeLogoUrl = getTeamLogo(prediction.homeTeam);
+  const awayLogoUrl = getTeamLogo(prediction.awayTeam);
+
+  // Log for debugging
+  console.log("Home Team:", prediction.homeTeam, "Logo URL:", homeLogoUrl);
+  console.log("Away Team:", prediction.awayTeam, "Logo URL:", awayLogoUrl);
+
   // Determine colors based on probability ranking
   const getProbabilityColors = () => {
     const probs = [
@@ -64,6 +77,31 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
     minute: "2-digit",
   });
 
+  // Fallback logo generator
+  const generateFallbackLogo = (teamName: string) => {
+    const initials = teamName
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=1e293b&color=fff&size=128&bold=true&font-size=0.5`;
+  };
+
+  const handleHomeLogoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error(`Failed to load logo for ${prediction.homeTeam}`);
+    console.error("Attempted URL:", homeLogoUrl);
+    setHomeLogoError(true);
+    e.currentTarget.src = generateFallbackLogo(prediction.homeTeam);
+  };
+
+  const handleAwayLogoError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error(`Failed to load logo for ${prediction.awayTeam}`);
+    console.error("Attempted URL:", awayLogoUrl);
+    setAwayLogoError(true);
+    e.currentTarget.src = generateFallbackLogo(prediction.awayTeam);
+  };
+
   return (
     <Card className="p-6 bg-gradient-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10">
       <div className="flex items-center justify-between mb-4">
@@ -75,10 +113,25 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
 
       <div className="flex items-center justify-center gap-8">
         {/* Home Team */}
-        <div className="flex-1 text-center">
-          <p className="font-semibold text-foreground text-lg">
+        <div className="flex-1 flex items-center justify-end gap-3">
+          <p className="font-semibold text-foreground text-lg text-right">
             {prediction.homeTeam}
           </p>
+          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
+            <img
+              src={homeLogoUrl}
+              alt={`${prediction.homeTeam} logo`}
+              className="w-full h-full object-contain"
+              loading="lazy"
+              onError={handleHomeLogoError}
+              crossOrigin="anonymous"
+            />
+            {homeLogoError && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-red-500 bg-slate-800/50 rounded-lg">
+                ⚠️
+              </div>
+            )}
+          </div>
         </div>
 
         {/* VS Divider */}
@@ -96,8 +149,23 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
 
         {/* Away Team */}
-        <div className="flex-1 text-center">
-          <p className="font-semibold text-foreground text-lg">
+        <div className="flex-1 flex items-center justify-start gap-3">
+          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
+            <img
+              src={awayLogoUrl}
+              alt={`${prediction.awayTeam} logo`}
+              className="w-full h-full object-contain"
+              loading="lazy"
+              onError={handleAwayLogoError}
+              crossOrigin="anonymous"
+            />
+            {awayLogoError && (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-red-500 bg-slate-800/50 rounded-lg">
+                ⚠️
+              </div>
+            )}
+          </div>
+          <p className="font-semibold text-foreground text-lg text-left">
             {prediction.awayTeam}
           </p>
         </div>
