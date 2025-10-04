@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { Prediction } from "@/types/prediction"; // Assuming Prediction type is defined
+import { Prediction } from "@/types/prediction";
 
 /**
  * Fetches all historical and current predictions from Supabase
@@ -17,24 +17,42 @@ export async function fetchAllPredictions(): Promise<Prediction[]> {
   }
 
   // Map the Supabase data to your Prediction type
-  const predictions: Prediction[] = data.map((item: any) => ({
-    id: item.id,
-    gameweek: item.gameweek,
-    homeTeam: item.home_team,
-    awayTeam: item.away_team,
-    predictedResult: item.predicted_result,
-    homeProb: item.home_prob,
-    awayProb: item.away_prob,
-    drawProb: item.draw_prob,
-    date: item.match_date,
-    actualResult: item.actual_result,
-    predictedHomeScore: item.home_score, // NOTE: Assuming your MatchCard logic uses 'predictedHomeScore'
-    predictedAwayScore: item.away_score, // NOTE: If these are actual scores for historical data, rename the key in the Prediction type
-    actualHomeScore: item.home_score,
-    actualAwayScore: item.away_score,
-    isCorrect: item.is_correct,
-    confidence: Math.max(item.home_prob, item.away_prob, item.draw_prob), // Calculate max confidence for the card
-  }));
+  const predictions: Prediction[] = data.map((item: any) => {
+    // Parse predicted_result if it's a score like "2-1"
+    let predictedHomeScore = 0;
+    let predictedAwayScore = 0;
+
+    if (item.predicted_result && item.predicted_result.includes("-")) {
+      [predictedHomeScore, predictedAwayScore] = item.predicted_result
+        .split("-")
+        .map(Number);
+    }
+
+    return {
+      id: item.id,
+      gameweek: item.gameweek,
+      homeTeam: item.home_team,
+      awayTeam: item.away_team,
+      predictedResult: item.predicted_result,
+      homeWinProbability: parseFloat(item.home_prob) || 0,
+      awayWinProbability: parseFloat(item.away_prob) || 0,
+      drawProbability: parseFloat(item.draw_prob) || 0,
+      date: item.match_date,
+      actualResult: item.actual_result,
+      actualHomeScore: item.home_score,
+      actualAwayScore: item.away_score,
+      predictedHomeScore: predictedHomeScore,
+      predictedAwayScore: predictedAwayScore,
+      isCorrect: item.is_correct,
+      predictedAt: item.predicted_at,
+      createdAt: item.created_at,
+      confidence: Math.max(
+        parseFloat(item.home_prob) || 0,
+        parseFloat(item.away_prob) || 0,
+        parseFloat(item.draw_prob) || 0,
+      ),
+    };
+  });
 
   return predictions;
 }
@@ -46,12 +64,12 @@ export async function fetchModelStats(): Promise<any> {
   const { data, error } = await supabase
     .from("model_stats")
     .select("*")
+    .order("last_updated", { ascending: false })
     .limit(1)
     .single();
 
   if (error) {
     console.error("Error fetching model stats:", error);
-    // You might throw the error or return default stats
     return null;
   }
 

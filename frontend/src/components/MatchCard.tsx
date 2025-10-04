@@ -1,7 +1,7 @@
 import { Prediction } from "@/types/prediction";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Minus } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 interface MatchCardProps {
   prediction: Prediction;
@@ -11,16 +11,26 @@ interface MatchCardProps {
 const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
   const isPredictionCorrect = () => {
     if (!showActual || prediction.actualHomeScore === undefined) return null;
-    
-    const predictedResult = prediction.predictedHomeScore > prediction.predictedAwayScore ? "home" :
-                           prediction.predictedHomeScore < prediction.predictedAwayScore ? "away" : "draw";
-    const actualResult = prediction.actualHomeScore > prediction.actualAwayScore! ? "home" :
-                        prediction.actualHomeScore < prediction.actualAwayScore! ? "away" : "draw";
-    
+
+    const predictedResult =
+      prediction.predictedHomeScore > prediction.predictedAwayScore
+        ? "home"
+        : prediction.predictedHomeScore < prediction.predictedAwayScore
+          ? "away"
+          : "draw";
+
+    const actualResult =
+      prediction.actualHomeScore > prediction.actualAwayScore!
+        ? "home"
+        : prediction.actualHomeScore < prediction.actualAwayScore!
+          ? "away"
+          : "draw";
+
     return predictedResult === actualResult;
   };
 
   const accuracy = isPredictionCorrect();
+
   const matchDate = new Date(prediction.date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -37,23 +47,19 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         <span className="text-xs text-muted-foreground">{matchDate}</span>
       </div>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-center gap-8">
         {/* Home Team */}
-        <div className="flex-1 text-right">
-          <p className="font-semibold text-foreground mb-2">{prediction.homeTeam}</p>
-          <p className="text-3xl font-bold text-primary">{prediction.predictedHomeScore}</p>
-          {showActual && prediction.actualHomeScore !== undefined && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Actual: {prediction.actualHomeScore}
-            </p>
-          )}
+        <div className="flex-1 text-center">
+          <p className="font-semibold text-foreground text-lg">
+            {prediction.homeTeam}
+          </p>
         </div>
 
         {/* VS Divider */}
         <div className="flex flex-col items-center gap-2">
           <span className="text-xs font-medium text-muted-foreground">VS</span>
           {accuracy !== null && (
-            <div className="mt-2">
+            <div className="mt-1">
               {accuracy ? (
                 <CheckCircle2 className="w-5 h-5 text-success" />
               ) : (
@@ -64,27 +70,61 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
 
         {/* Away Team */}
-        <div className="flex-1 text-left">
-          <p className="font-semibold text-foreground mb-2">{prediction.awayTeam}</p>
-          <p className="text-3xl font-bold text-primary">{prediction.predictedAwayScore}</p>
-          {showActual && prediction.actualAwayScore !== undefined && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Actual: {prediction.actualAwayScore}
-            </p>
-          )}
+        <div className="flex-1 text-center">
+          <p className="font-semibold text-foreground text-lg">
+            {prediction.awayTeam}
+          </p>
         </div>
       </div>
 
-      {/* Confidence Bar */}
+      {showActual &&
+        (prediction.actualHomeScore !== undefined ||
+          prediction.actualAwayScore !== undefined) && (
+          <div className="text-center mt-4 pt-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Actual Result:{" "}
+              <span className="font-semibold text-foreground">
+                {prediction.actualResult ||
+                  `${prediction.actualHomeScore} - ${prediction.actualAwayScore}`}
+              </span>
+            </p>
+          </div>
+        )}
+
+      {/* Segmented Probability Bar */}
       <div className="mt-4 pt-4 border-t border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground">Confidence</span>
-          <span className="text-xs font-semibold text-foreground">{prediction.confidence}%</span>
+        <div className="flex items-center justify-between mb-2 text-xs">
+          <span className="text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {prediction.homeWinProbability}%
+            </span>{" "}
+            Home
+          </span>
+          <span className="text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {prediction.drawProbability}%
+            </span>{" "}
+            Draw
+          </span>
+          <span className="text-muted-foreground">
+            <span className="font-semibold text-foreground">
+              {prediction.awayWinProbability}%
+            </span>{" "}
+            Away
+          </span>
         </div>
-        <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-secondary rounded-full h-3 overflow-hidden flex">
           <div
-            className="bg-gradient-pitch h-full transition-all duration-500 rounded-full"
-            style={{ width: `${prediction.confidence}%` }}
+            className="bg-green-500 h-full transition-all duration-500"
+            style={{ width: `${prediction.homeWinProbability}%` }}
+          />
+          <div
+            className="bg-yellow-500 h-full transition-all duration-500"
+            style={{ width: `${prediction.drawProbability}%` }}
+          />
+          <div
+            className="bg-red-500 h-full transition-all duration-500"
+            style={{ width: `${prediction.awayWinProbability}%` }}
           />
         </div>
       </div>
