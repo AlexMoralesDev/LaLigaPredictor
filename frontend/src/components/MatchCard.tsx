@@ -151,17 +151,40 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
           </div>
         </div>
 
-        {/* VS Divider */}
+        {/* Score/VS Divider */}
         <div className="flex flex-col items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">VS</span>
-          {accuracy !== null && (
-            <div className="mt-1">
-              {accuracy ? (
-                <CheckCircle2 className="w-5 h-5 text-success" />
-              ) : (
-                <XCircle className="w-5 h-5 text-destructive" />
+          {showActual &&
+          prediction.actualHomeScore !== null &&
+          prediction.actualHomeScore !== undefined &&
+          prediction.actualAwayScore !== null &&
+          prediction.actualAwayScore !== undefined ? (
+            // Show actual score when match is finished (History tab)
+            <>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl font-bold text-foreground">
+                  {prediction.actualHomeScore}
+                </span>
+                <span className="text-xl text-muted-foreground">-</span>
+                <span className="text-3xl font-bold text-foreground">
+                  {prediction.actualAwayScore}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">Final Score</span>
+              {accuracy !== null && (
+                <div className="mt-1">
+                  {accuracy ? (
+                    <CheckCircle2 className="w-5 h-5 text-success" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-destructive" />
+                  )}
+                </div>
               )}
-            </div>
+            </>
+          ) : (
+            // Show VS when match hasn't been played (Current Predictions tab)
+            <span className="text-xs font-medium text-muted-foreground">
+              VS
+            </span>
           )}
         </div>
 
@@ -188,19 +211,7 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
       </div>
 
-      {showActual &&
-        (prediction.actualHomeScore !== undefined ||
-          prediction.actualAwayScore !== undefined) && (
-          <div className="text-center mt-4 pt-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Actual Result:{" "}
-              <span className="font-semibold text-foreground">
-                {prediction.actualResult ||
-                  `${prediction.actualHomeScore} - ${prediction.actualAwayScore}`}
-              </span>
-            </p>
-          </div>
-        )}
+      {/* Probability bar is always shown */}
 
       {/* Segmented Probability Bar */}
       <div className="mt-4 pt-4 border-t border-border">
