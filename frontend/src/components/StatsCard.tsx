@@ -20,8 +20,8 @@ const StatsCard = ({ title, value, subtitle, trend }: StatsCardProps) => {
           )}
         </div>
         {trend === "up" && (
-          <div className="bg-accent/20 p-2 rounded-lg">
-            <TrendingUp className="w-5 h-5 text-accent" />
+          <div className="bg-success/20 p-2 rounded-lg">
+            <TrendingUp className="w-5 h-5 text-success" />
           </div>
         )}
       </div>
