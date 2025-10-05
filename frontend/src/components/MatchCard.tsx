@@ -35,9 +35,9 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
 
     // Assign colors: highest = salmon, middle = international orange, lowest = burnt orange
     const colorMap: Record<string, string> = {};
-    colorMap[probs[1].name] = "bg-[#FA8072]";
-    colorMap[probs[2].name] = "bg-[#F04A00]";
-    colorMap[probs[0].name] = "bg-[#FFE5B4]";
+    colorMap[probs[1].name] = "bg-[#FA8072]"; // Highest - Salmon
+    colorMap[probs[2].name] = "bg-[#F04A00]"; // Middle - International Orange
+    colorMap[probs[0].name] = "bg-[#FFE5B4]"; // Lowest - Burnt Orange
 
     return {
       homeColor: colorMap["home"],
@@ -120,7 +120,7 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
   };
 
   return (
-    <Card className="p-6 bg-gradient-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10">
+    <Card className="p-4 sm:p-6 bg-gradient-card border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10">
       <div className="flex items-center justify-between mb-4">
         <Badge variant="secondary" className="text-xs">
           GW {prediction.gameweek}
@@ -128,13 +128,13 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         <span className="text-xs text-muted-foreground">{matchDate}</span>
       </div>
 
-      <div className="flex items-center justify-center gap-8">
+      <div className="flex items-center justify-center gap-2 sm:gap-6 md:gap-8">
         {/* Home Team */}
-        <div className="flex-1 flex items-center justify-end gap-3">
-          <p className="font-semibold text-foreground text-lg text-right">
+        <div className="flex-1 flex items-center justify-end gap-2 sm:gap-3 min-w-0 max-w-[40%]">
+          <p className="font-semibold text-foreground text-xs sm:text-sm md:text-base lg:text-lg text-right break-words">
             {prediction.homeTeam}
           </p>
-          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
             <img
               src={homeLogoUrl}
               alt={`${prediction.homeTeam} logo`}
@@ -152,7 +152,7 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
 
         {/* Score/VS Divider */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 flex-shrink-0">
           {showActual &&
           prediction.actualHomeScore !== null &&
           prediction.actualHomeScore !== undefined &&
@@ -160,12 +160,14 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
           prediction.actualAwayScore !== undefined ? (
             // Show actual score when match is finished (History tab)
             <>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-foreground">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-2xl sm:text-3xl font-bold text-foreground">
                   {prediction.actualHomeScore}
                 </span>
-                <span className="text-xl text-muted-foreground">-</span>
-                <span className="text-3xl font-bold text-foreground">
+                <span className="text-lg sm:text-xl text-muted-foreground">
+                  -
+                </span>
+                <span className="text-2xl sm:text-3xl font-bold text-foreground">
                   {prediction.actualAwayScore}
                 </span>
               </div>
@@ -189,8 +191,8 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
         </div>
 
         {/* Away Team */}
-        <div className="flex-1 flex items-center justify-start gap-3">
-          <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
+        <div className="flex-1 flex items-center justify-start gap-2 sm:gap-3 min-w-0 max-w-[40%]">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-white/5 rounded-lg p-1 relative">
             <img
               src={awayLogoUrl}
               alt={`${prediction.awayTeam} logo`}
@@ -205,7 +207,7 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
               </div>
             )}
           </div>
-          <p className="font-semibold text-foreground text-lg text-left">
+          <p className="font-semibold text-foreground text-xs sm:text-sm md:text-base lg:text-lg text-left break-words">
             {prediction.awayTeam}
           </p>
         </div>
@@ -215,24 +217,27 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
 
       {/* Segmented Probability Bar */}
       <div className="mt-4 pt-4 border-t border-border">
-        <div className="flex items-center justify-between mb-2 text-xs">
-          <span className="text-muted-foreground">
+        <div className="flex items-center justify-between mb-2 text-[9px] sm:text-[10px] md:text-xs gap-1">
+          <span className="text-muted-foreground flex-shrink-0">
             <span className="font-semibold text-foreground">
               {prediction.homeWinProbability}%
             </span>{" "}
-            Home
+            <span className="hidden sm:inline">Home</span>
+            <span className="sm:hidden">H</span>
           </span>
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground flex-shrink-0">
             <span className="font-semibold text-foreground">
               {prediction.drawProbability}%
             </span>{" "}
-            Draw
+            <span className="hidden sm:inline">Draw</span>
+            <span className="sm:hidden">D</span>
           </span>
-          <span className="text-muted-foreground">
+          <span className="text-muted-foreground flex-shrink-0">
             <span className="font-semibold text-foreground">
               {prediction.awayWinProbability}%
             </span>{" "}
-            Away
+            <span className="hidden sm:inline">Away</span>
+            <span className="sm:hidden">A</span>
           </span>
         </div>
         <div className="w-full bg-secondary rounded-full h-3 overflow-hidden flex">
