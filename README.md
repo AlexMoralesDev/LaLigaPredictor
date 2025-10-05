@@ -1,217 +1,152 @@
 # La Liga Match Predictor
 
-An AI-powered machine learning model that predicts La Liga match outcomes using advanced statistical analysis.
+A full-stack machine learning application that predicts Spanish La Liga football match outcomes using advanced statistical modeling and real-time data processing.
 
-## Current Status
+## Live Application
 
-**Last Updated:** 2025-10-01 21:10:23  
-**Model Training Accuracy:** 93.1%  
-**Overall Prediction Accuracy:** 50.0%  
-**Total Matches Predicted:** 30  
-**Total Matches with Results:** 10
+**Production URL:** [laligapredictor.netlify.app](https://laligapredictor.netlify.app/)
 
-## Current Gameweek Predictions
+## Project Overview
 
-### Gameweek 8
+This application demonstrates end-to-end development of a machine learning system, from data collection and model training to deployment of a production-ready web interface. The system processes historical match data, generates predictions for upcoming fixtures, and provides real-time performance tracking.
 
-⏳ **CA Osasuna vs Getafe CF**  
-2025-10-03 19:00  
-**Prediction:** CA Osasuna Win  
-**Status:** Awaiting result  
-Probabilities: CA Osasuna 48.6% | Draw 31.2% | Getafe CF 20.2%
+## Key Features
 
-⏳ **Real Oviedo vs Levante UD**  
-2025-10-04 12:00  
-**Prediction:** Draw  
-**Status:** Awaiting result  
-Probabilities: Real Oviedo 25.5% | Draw 53.1% | Levante UD 21.4%
+### Prediction Engine
 
-⏳ **Girona FC vs Valencia CF**  
-2025-10-04 14:15  
-**Prediction:** Draw  
-**Status:** Awaiting result  
-Probabilities: Girona FC 26.4% | Draw 50.2% | Valencia CF 23.4%
+- Real-time match outcome predictions with probability distributions
+- Multi-class classification (Home Win / Draw / Away Win)
+- Confidence intervals and uncertainty quantification
+- Automated prediction generation for each gameweek
 
-⏳ **Athletic Club vs RCD Mallorca**  
-2025-10-04 16:30  
-**Prediction:** Athletic Club Win  
-**Status:** Awaiting result  
-Probabilities: Athletic Club 48.1% | Draw 32.9% | RCD Mallorca 19.0%
+### Performance Analytics
 
-⏳ **Real Madrid CF vs Villarreal CF**  
-2025-10-04 19:00  
-**Prediction:** Real Madrid CF Win  
-**Status:** Awaiting result  
-Probabilities: Real Madrid CF 53.2% | Draw 26.5% | Villarreal CF 20.4%
+- Historical prediction tracking and accuracy metrics
+- Visual performance dashboards with trend analysis
+- Match-by-match result verification
+- Statistical significance testing
 
-⏳ **Deportivo Alavés vs Elche CF**  
-2025-10-05 12:00  
-**Prediction:** Draw  
-**Status:** Awaiting result  
-Probabilities: Deportivo Alavés 17.0% | Draw 42.0% | Elche CF 41.0%
+### User Interface
 
-⏳ **Sevilla FC vs FC Barcelona**  
-2025-10-05 14:15  
-**Prediction:** Draw  
-**Status:** Awaiting result  
-Probabilities: Sevilla FC 15.4% | Draw 44.6% | FC Barcelona 40.0%
+- Responsive web application optimized for mobile and desktop
+- Interactive data visualizations
+- Real-time updates with automated result verification
+- Clean, modern design with intuitive navigation
 
-⏳ **RCD Espanyol de Barcelona vs Real Betis Balompié**  
-2025-10-05 16:30  
-**Prediction:** Draw  
-**Status:** Awaiting result  
-Probabilities: RCD Espanyol de Barcelona 24.5% | Draw 40.5% | Real Betis Balompié 35.0%
+## Technical Architecture
 
-⏳ **Real Sociedad de Fútbol vs Rayo Vallecano de Madrid**  
-2025-10-05 16:30  
-**Prediction:** Rayo Vallecano de Madrid Win  
-**Status:** Awaiting result  
-Probabilities: Real Sociedad de Fútbol 32.3% | Draw 28.9% | Rayo Vallecano de Madrid 38.8%
+### Machine Learning Pipeline
 
-⏳ **RC Celta de Vigo vs Club Atlético de Madrid**  
-2025-10-05 19:00  
-**Prediction:** Club Atlético de Madrid Win  
-**Status:** Awaiting result  
-Probabilities: RC Celta de Vigo 18.6% | Draw 27.5% | Club Atlético de Madrid 53.9%
+**Algorithm:** Random Forest Classifier
 
-## Prediction History
+- 300 decision trees with optimized hyperparameters
+- Balanced class weights to address outcome distribution
+- Cross-validation for model selection and tuning
+- Feature importance analysis for model interpretability
 
-### Gameweek 8
+**Training Data:**
 
-_Predicted on: 2025-09-30 17:13:27_
+- 2+ seasons of comprehensive La Liga match statistics
+- 50+ engineered features per match
+- Regular retraining cycles to capture current season dynamics
 
-**Status: 10 matches predicted, awaiting results**
+**Feature Engineering:**
+The model incorporates multiple statistical dimensions:
 
-⏳ **CA Osasuna vs Getafe CF**  
-Predicted: CA Osasuna Win  
-**Status:** Result pending  
-Confidence: 48.6% | 31.2% | 20.2%
+- **Performance Metrics:** Points per game, goal differentials, shot accuracy
+- **Form Analysis:** Rolling averages over 3, 5, and 10 match windows
+- **Defensive Statistics:** Clean sheet rates, goals conceded patterns, defensive actions
+- **Offensive Statistics:** Goals scored, expected goals (xG), shot conversion rates
+- **Venue Effects:** Home/away performance splits and historical venue data
+- **Head-to-Head:** Historical matchup statistics and recent encounters
+- **League Position:** Performance against teams in different table positions
 
-⏳ **Real Oviedo vs Levante UD**  
-Predicted: Draw  
-**Status:** Result pending  
-Confidence: 25.5% | 53.1% | 21.4%
+### Technology Stack
 
-⏳ **Girona FC vs Valencia CF**  
-Predicted: Draw  
-**Status:** Result pending  
-Confidence: 26.4% | 50.2% | 23.4%
+**Frontend:**
 
-⏳ **Athletic Club vs RCD Mallorca**  
-Predicted: Athletic Club Win  
-**Status:** Result pending  
-Confidence: 48.1% | 32.9% | 19.0%
+- React 18 with TypeScript for type-safe component development
+- Tailwind CSS for responsive utility-first styling
+- shadcn/ui component library for consistent design system
+- Lucide React for vector iconography
+- Deployed via Netlify with continuous deployment
 
-⏳ **Real Madrid CF vs Villarreal CF**  
-Predicted: Real Madrid CF Win  
-**Status:** Result pending  
-Confidence: 53.2% | 26.5% | 20.4%
+**Backend & Data Processing:**
 
-⏳ **Deportivo Alavés vs Elche CF**  
-Predicted: Draw  
-**Status:** Result pending  
-Confidence: 17.0% | 42.0% | 41.0%
+- Python 3.x for data pipeline and ML model
+- scikit-learn for machine learning algorithms
+- pandas and NumPy for data manipulation and numerical computing
+- Automated data collection from football-data.org API
+- Scheduled jobs for prediction generation and result updates
 
-⏳ **Sevilla FC vs FC Barcelona**  
-Predicted: Draw  
-**Status:** Result pending  
-Confidence: 15.4% | 44.6% | 40.0%
+**Data Management:**
 
-⏳ **RCD Espanyol de Barcelona vs Real Betis Balompié**  
-Predicted: Draw  
-**Status:** Result pending  
-Confidence: 24.5% | 40.5% | 35.0%
+- Structured data storage for historical matches and predictions
+- Automated ETL pipeline for data ingestion
+- Version control for model artifacts and training data
 
-⏳ **Real Sociedad de Fútbol vs Rayo Vallecano de Madrid**  
-Predicted: Rayo Vallecano de Madrid Win  
-**Status:** Result pending  
-Confidence: 32.3% | 28.9% | 38.8%
+## Development Highlights
 
-⏳ **RC Celta de Vigo vs Club Atlético de Madrid**  
-Predicted: Club Atlético de Madrid Win  
-**Status:** Result pending  
-Confidence: 18.6% | 27.5% | 53.9%
+### Machine Learning Engineering
 
----
+- Designed and implemented feature engineering pipeline
+- Conducted extensive hyperparameter tuning and model selection
+- Implemented cross-validation strategies to prevent overfitting
+- Built automated model evaluation and performance tracking
 
-### Gameweek 7
+### Full-Stack Development
 
-_Predicted on: 2025-09-28 10:57:37_
+- Architected responsive React application with TypeScript
+- Designed RESTful API for model predictions and historical data
+- Implemented automated deployment pipeline with CI/CD
+- Created interactive data visualizations for model insights
 
-**Final Accuracy: 50.0% (5/10 correct)**
+### Data Engineering
 
-✅ **Girona FC vs RCD Espanyol de Barcelona**  
-Predicted: Draw  
-**Final Result:** Draw (0-0)  
-Confidence: 32.6% | 34.9% | 32.4%
+- Built ETL pipeline for football statistics aggregation
+- Implemented data validation and quality checks
+- Designed database schema for efficient querying
+- Automated data collection with error handling and logging
 
-✅ **Getafe CF vs Levante UD**  
-Predicted: Draw  
-**Final Result:** Draw (1-1)  
-Confidence: 33.3% | 35.4% | 31.3%
+## Performance Monitoring
 
-❌ **Club Atlético de Madrid vs Real Madrid CF**  
-Predicted: Real Madrid CF Win  
-**Final Result:** Club Atlético de Madrid Win (5-2)  
-Confidence: 22.8% | 33.7% | 43.5%
+The system includes comprehensive monitoring:
 
-❌ **RCD Mallorca vs Deportivo Alavés**  
-Predicted: Draw  
-**Final Result:** RCD Mallorca Win (1-0)  
-Confidence: 28.0% | 46.1% | 25.8%
+- Model accuracy tracking across different prediction types
+- Calibration metrics to ensure probability accuracy
+- Temporal analysis of prediction performance
+- A/B testing framework for model iterations
 
-✅ **Villarreal CF vs Athletic Club**  
-Predicted: Villarreal CF Win  
-**Final Result:** Villarreal CF Win (1-0)  
-Confidence: 44.0% | 31.1% | 24.9%
+## Deployment & Operations
 
-❌ **Rayo Vallecano de Madrid vs Sevilla FC**  
-Predicted: Draw  
-**Final Result:** Sevilla FC Win (0-1)  
-Confidence: 39.1% | 39.7% | 21.2%
+- Continuous integration and deployment via Git workflows
+- Automated testing for model performance and API endpoints
+- Error logging and monitoring for production issues
+- Scalable architecture to handle increased traffic
 
-✅ **Elche CF vs RC Celta de Vigo**  
-Predicted: Elche CF Win  
-**Final Result:** Elche CF Win (2-1)  
-Confidence: 59.4% | 29.8% | 10.8%
+## Skills Demonstrated
 
-✅ **FC Barcelona vs Real Sociedad de Fútbol**  
-Predicted: FC Barcelona Win  
-**Final Result:** FC Barcelona Win (2-1)  
-Confidence: 75.8% | 17.1% | 7.1%
+- Machine Learning: Classification, feature engineering, model evaluation
+- Data Science: Statistical analysis, data visualization, hypothesis testing
+- Frontend Development: React, TypeScript, responsive design, state management
+- Backend Development: Python, API design, data processing
+- DevOps: CI/CD, deployment automation, monitoring
+- Software Engineering: Version control, testing, documentation, code quality
 
-❌ **Real Betis Balompié vs CA Osasuna**  
-Predicted: CA Osasuna Win  
-**Final Result:** Real Betis Balompié Win (2-0)  
-Confidence: 26.9% | 32.9% | 40.2%
+## Future Enhancements
 
-❌ **Valencia CF vs Real Oviedo**  
-Predicted: Valencia CF Win  
-**Final Result:** Real Oviedo Win (1-2)  
-Confidence: 73.4% | 17.3% | 9.2%
+- Incorporate additional data sources (weather, injuries, referee statistics)
+- Implement ensemble methods combining multiple model architectures
+- Add player-level statistics and lineup analysis
+- Expand to other European football leagues
+- Build mobile applications for iOS and Android
+
+## Notes
+
+This application is designed for analytical and educational purposes. Sports prediction inherently involves uncertainty, and model performance should be evaluated within that context.
 
 ---
 
-## Model Information
-
-### Features Used
-
-- Points per game difference
-- Goal difference per game
-- Home/Away venue-specific performance
-- Attack vs Defense matchup analysis
-- Recent form (last 3 and 5 matches)
-- Performance against top/bottom teams
-- Clean sheet rates and defensive metrics
-- Expected goals calculations
-
-### Algorithm
-
-- **Random Forest Classifier** with 300 trees
-- Trained on 2+ seasons of La Liga data
-- Features engineered for maximum predictive power
-- Handles class imbalance with balanced weights
-
----
-
-_Predictions are for entertainment purposes only. Past performance does not guarantee future results._
+**Repository maintained by:** [Alex Morales Trevisan]  
+**Contact:** [https://www.linkedin.com/in/alex-morales-dev/]  
+**Last Updated:** October 2025
