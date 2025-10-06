@@ -87,11 +87,13 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
 
   const accuracy = isPredictionCorrect();
 
+  // Convert to user's local timezone
   const matchDate = new Date(prediction.date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZoneName: "short",
   });
 
   // Fallback logo generator

@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/select";
 import MatchCard from "@/components/MatchCard";
 import StatsCard from "@/components/StatsCard";
-import InfoFooter from "@/components/InfoFooter"; // ← Capitalized
-import { Trophy, Target, TrendingUp } from "lucide-react";
+import InfoFooter from "@/components/InfoFooter";
+import { Trophy, Target, TrendingUp, ArrowUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Assuming these are your API functions and types
 import { fetchAllPredictions, fetchModelStats } from "@/lib/api";
@@ -53,6 +54,7 @@ const isCorrect = (prediction: Prediction): boolean => {
 const Index = () => {
   const [selectedTeam, setSelectedTeam] = useState("All Teams");
   const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [allPredictions, setAllPredictions] = useState<Prediction[]>([]);
   const [modelStats, setModelStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -142,6 +144,11 @@ const Index = () => {
     };
   }, [historicalPredictions, modelStats]);
 
+  // Toggle sort order
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
   // 4. Filter and Sort Predictions
   const filterPredictions = (predictions: Prediction[]) => {
     let filtered = [...predictions];
@@ -152,21 +159,39 @@ const Index = () => {
       );
     }
 
+    // Sort based on selected criteria and order
     if (sortBy === "confidence") {
-      filtered.sort((a, b) => b.confidence - a.confidence);
+      filtered.sort((a, b) => {
+        const diff = a.confidence - b.confidence;
+        return sortOrder === "asc" ? diff : -diff;
+      });
     } else if (sortBy === "accuracy") {
       filtered.sort((a, b) => {
-        const aCorrect = isCorrect(a);
-        const bCorrect = isCorrect(b);
-        return (bCorrect ? 1 : 0) - (aCorrect ? 1 : 0);
+        const aCorrect = isCorrect(a) ? 1 : 0;
+        const bCorrect = isCorrect(b) ? 1 : 0;
+        const diff = aCorrect - bCorrect;
+        return sortOrder === "asc" ? diff : -diff;
       });
     } else {
-      // Default sort by date ascending for current, or reverse for history
-      filtered.sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-      );
+      // Sort by date
+      filtered.sort((a, b) => {
+        const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        return sortOrder === "asc" ? diff : -diff;
+      });
     }
     return filtered;
+  };
+
+  // Get sort order label
+  const getSortOrderLabel = () => {
+    if (sortBy === "date") {
+      return sortOrder === "desc" ? "Newest First" : "Oldest First";
+    } else if (sortBy === "confidence") {
+      return sortOrder === "desc" ? "Highest First" : "Lowest First";
+    } else if (sortBy === "accuracy") {
+      return sortOrder === "desc" ? "Correct First" : "Incorrect First";
+    }
+    return "";
   };
 
   // HEADER COMPONENT (Extracted for use in both loading and loaded states)
@@ -230,8 +255,8 @@ const Index = () => {
         </div>
 
         {/* Filters and Sort */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
-          <div className="flex space-x-4 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 gap-4">
+          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
               <SelectTrigger className="w-full sm:w-[200px] bg-card border-border">
                 <SelectValue placeholder="Filter by Team" />
@@ -256,6 +281,16 @@ const Index = () => {
               </SelectContent>
             </Select>
           </div>
+
+          <Button
+            variant="outline"
+            size="default"
+            onClick={toggleSortOrder}
+            className="w-full sm:w-auto bg-card border-border hover:bg-secondary hover:border-primary/50 transition-all"
+          >
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            {getSortOrderLabel()}
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -309,7 +344,7 @@ const Index = () => {
         </Tabs>
       </div>
       {/* Interactive Footer */}
-      <InfoFooter /> {/* ← Self-closing tag with capital I */}
+      <InfoFooter />
     </div>
   );
 };
