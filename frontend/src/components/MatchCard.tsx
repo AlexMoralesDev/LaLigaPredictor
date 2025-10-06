@@ -33,11 +33,11 @@ const MatchCard = ({ prediction, showActual = false }: MatchCardProps) => {
     // Sort by probability (highest to lowest)
     probs.sort((a, b) => b.value - a.value);
 
-    // Assign colors: highest = salmon, middle = international orange, lowest = burnt orange
+    // Assign colors:
     const colorMap: Record<string, string> = {};
-    colorMap[probs[1].name] = "bg-[#FA8072]"; // Highest - Salmon
-    colorMap[probs[2].name] = "bg-[#F04A00]"; // Middle - International Orange
-    colorMap[probs[0].name] = "bg-[#FFE5B4]"; // Lowest - Burnt Orange
+    colorMap[probs[0].name] = "bg-[#5DC169]"; // Highest - Green
+    colorMap[probs[1].name] = "bg-[#DEB94C]"; // Middle - Yellow
+    colorMap[probs[2].name] = "bg-[#813835]"; // Lowest - Red
 
     return {
       homeColor: colorMap["home"],

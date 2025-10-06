@@ -179,7 +179,8 @@ const Index = () => {
           </h1>
         </div>
         <p className="text-foreground/80">
-          AI-powered match predictions with historical accuracy tracking
+          ML learning powered match predictions with historical accuracy
+          tracking
         </p>
       </div>
     </header>
