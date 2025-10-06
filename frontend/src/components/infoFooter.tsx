@@ -67,11 +67,8 @@ const InfoFooter = () => {
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
+      if (newSet.has(section)) newSet.delete(section);
+      else newSet.add(section);
       return newSet;
     });
   };
@@ -183,8 +180,9 @@ const InfoFooter = () => {
 
   return (
     <footer className="bg-background border-t border-border mt-16">
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
+      <div className="w-full px-4 py-12">
+        {/* Header */}
+        <div className="w-full mb-12 text-center">
           <h2 className="text-4xl font-bold text-foreground mb-3 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             About This Project
           </h2>
@@ -195,185 +193,197 @@ const InfoFooter = () => {
           </p>
         </div>
 
-        {/* Animated Stats Banner */}
-        <div className="max-w-4xl mx-auto mb-8 bg-gradient-to-r from-primary/5 via-accent/5 to-warning/5 rounded-xl p-6 border border-border">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center group cursor-default">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                <div className="text-3xl font-bold text-primary">
-                  {animatedStats.accuracy}%
+        {/* Animated Stats */}
+        <div className="w-full mb-8">
+          <div className="max-w-7xl mx-auto bg-gradient-to-r from-primary/5 via-accent/5 to-warning/5 rounded-xl p-6 border border-border">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center group cursor-default">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Target className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+                  <div className="text-3xl font-bold text-primary">
+                    {animatedStats.accuracy}%
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Model Accuracy
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Model Accuracy
-              </div>
-            </div>
-            <div className="text-center group cursor-default">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
-                <div className="text-3xl font-bold text-accent">
-                  {animatedStats.predictions}+
+
+              <div className="text-center group cursor-default">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Zap className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
+                  <div className="text-3xl font-bold text-accent">
+                    {animatedStats.predictions}+
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Match Results Analyzed
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Match Results Analyzed
-              </div>
-            </div>
-            <div className="text-center group cursor-default">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-warning group-hover:scale-110 transition-transform" />
-                <div className="text-3xl font-bold text-warning">Live</div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Website Fully Deployed
+
+              <div className="text-center group cursor-default">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-warning group-hover:scale-110 transition-transform" />
+                  <div className="text-3xl font-bold text-warning">Live</div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Website Fully Deployed
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto space-y-4 mb-12">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            const isExpanded = expandedSections.has(section.id);
-            const isHovered = hoveredCard === section.id;
+        {/* Sections */}
+        <div className="w-full space-y-4 mb-12">
+          <div className="max-w-7xl mx-auto space-y-4">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              const isExpanded = expandedSections.has(section.id);
+              const isHovered = hoveredCard === section.id;
 
-            return (
-              <div
-                key={section.id}
-                onMouseEnter={() => setHoveredCard(section.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className={`bg-card backdrop-blur-sm border border-border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 ${
-                  isHovered ? "border-primary/50" : ""
-                }`}
-              >
-                <button
-                  onClick={() => toggleSection(section.id)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-secondary/50 transition-colors group"
+              return (
+                <div
+                  key={section.id}
+                  onMouseEnter={() => setHoveredCard(section.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  className={`bg-card backdrop-blur-sm border border-border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 ${
+                    isHovered ? "border-primary/50" : ""
+                  }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-2 rounded-lg bg-gradient-to-br ${section.gradient} group-hover:scale-110 transition-transform duration-300`}
-                    >
-                      <Icon className={`w-6 h-6 ${section.iconColor}`} />
+                  <button
+                    onClick={() => toggleSection(section.id)}
+                    className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-secondary/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`p-2 rounded-lg bg-gradient-to-br ${section.gradient} group-hover:scale-110 transition-transform duration-300`}
+                      >
+                        <Icon className={`w-6 h-6 ${section.iconColor}`} />
+                      </div>
+                      <span className="font-semibold text-foreground text-lg">
+                        {section.title}
+                      </span>
                     </div>
-                    <span className="font-semibold text-foreground text-lg">
-                      {section.title}
-                    </span>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  )}
-                </button>
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    )}
+                  </button>
 
-                {isExpanded && (
-                  <div className="px-6 pb-5 pt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-border/50">
-                    {/* Stats Pills */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {Object.entries(section.stats).map(([key, value]) => (
+                  {isExpanded && (
+                    <div className="px-6 pb-5 pt-2 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-border/50">
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {Object.entries(section.stats).map(([key, value]) => (
+                          <div
+                            key={key}
+                            className="px-3 py-1 bg-secondary/80 rounded-full text-xs font-medium text-muted-foreground border border-border hover:border-primary/50 hover:scale-105 transition-all cursor-default"
+                          >
+                            <span className="text-primary capitalize">
+                              {key}:
+                            </span>{" "}
+                            {value}
+                          </div>
+                        ))}
+                      </div>
+
+                      {Object.entries(section.content).map(([key, value]) => (
                         <div
                           key={key}
-                          className="px-3 py-1 bg-secondary/80 rounded-full text-xs font-medium text-muted-foreground border border-border hover:border-primary/50 hover:scale-105 transition-all cursor-default"
+                          className="pl-3 border-l-2 border-primary/30 hover:border-primary/60 transition-colors"
                         >
-                          <span className="text-primary capitalize">
-                            {key}:
-                          </span>{" "}
-                          {value}
+                          <span className="text-primary font-semibold capitalize block mb-1">
+                            {key}
+                          </span>
+                          <span className="text-card-foreground text-sm leading-relaxed">
+                            {value}
+                          </span>
                         </div>
                       ))}
                     </div>
-
-                    {/* Content Details */}
-                    {Object.entries(section.content).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="pl-3 border-l-2 border-primary/30 hover:border-primary/60 transition-colors"
-                      >
-                        <span className="text-primary font-semibold capitalize block mb-1">
-                          {key}
-                        </span>
-                        <span className="text-card-foreground text-sm leading-relaxed">
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Skills Section */}
-        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-xl p-8 mb-8 border border-border max-w-4xl mx-auto">
-          <h3 className="font-bold text-foreground mb-4 text-xl text-center">
-            Technical Skills Demonstrated
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {skills.map((skill) => {
-              const SkillIcon = skill.icon;
-              return (
-                <div
-                  key={skill.label}
-                  className="text-center p-4 bg-card rounded-lg hover:bg-secondary transition-all duration-300 hover:scale-105 cursor-default border border-border group"
-                >
-                  <SkillIcon className="w-8 h-8 mx-auto mb-2 text-primary group-hover:text-accent transition-colors" />
-                  <div className="text-sm font-medium text-foreground">
-                    {skill.label}
-                  </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-border max-w-4xl mx-auto">
-          <div className="text-center md:text-left">
-            <h3 className="font-semibold text-foreground mb-3 text-lg">
-              Project Highlights
+        {/* Skills */}
+        <div className="w-full mb-8">
+          <div className="max-w-7xl mx-auto bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-xl p-8 border border-border">
+            <h3 className="font-bold text-foreground mb-4 text-xl text-center">
+              Technical Skills Demonstrated
             </h3>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2 group cursor-default">
-                <Shield className="w-4 h-4 text-success group-hover:scale-110 transition-transform" />
-                <span>Production-ready deployment pipeline</span>
-              </div>
-              <div className="flex items-center gap-2 group cursor-default">
-                <Zap className="w-4 h-4 text-warning group-hover:scale-110 transition-transform" />
-                <span>Real-time data processing & predictions</span>
-              </div>
-              <div className="flex items-center gap-2 group cursor-default">
-                <Users className="w-4 h-4 text-accent group-hover:scale-110 transition-transform" />
-                <span>Responsive & accessible UI/UX design</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center md:text-right">
-            <h3 className="font-semibold text-foreground mb-3 text-lg">
-              Connect With Me
-            </h3>
-            <div className="flex flex-wrap justify-center md:justify-end gap-3 mb-3">
-              {socialLinks.map((social) => {
-                const Icon = social.icon;
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {skills.map((skill) => {
+                const SkillIcon = skill.icon;
                 return (
-                  <a
-                    key={social.name}
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`p-2 bg-secondary rounded-lg border border-border transition-all duration-300 hover:scale-110 hover:border-primary/50 hover:-translate-y-1 ${social.color}`}
-                    aria-label={social.name}
+                  <div
+                    key={skill.label}
+                    className="text-center p-4 bg-card rounded-lg hover:bg-secondary transition-all duration-300 hover:scale-105 cursor-default border border-border group"
                   >
-                    <Icon />
-                  </a>
+                    <SkillIcon className="w-8 h-8 mx-auto mb-2 text-primary group-hover:text-accent transition-colors" />
+                    <div className="text-sm font-medium text-foreground">
+                      {skill.label}
+                    </div>
+                  </div>
                 );
               })}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Alex Morales Trevisan
-            </p>
+          </div>
+        </div>
+
+        {/* Footer Bottom */}
+        <div className="w-full pt-8 border-t border-border">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 px-4 md:px-8">
+            {/* Project Highlights */}
+            <div className="text-center md:text-left">
+              <h3 className="font-semibold text-foreground mb-3 text-lg">
+                Project Highlights
+              </h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 group cursor-default">
+                  <Shield className="w-4 h-4 text-success group-hover:scale-110 transition-transform" />
+                  <span>Production-ready deployment pipeline</span>
+                </div>
+                <div className="flex items-center gap-2 group cursor-default">
+                  <Zap className="w-4 h-4 text-warning group-hover:scale-110 transition-transform" />
+                  <span>Real-time data processing & predictions</span>
+                </div>
+                <div className="flex items-center gap-2 group cursor-default">
+                  <Users className="w-4 h-4 text-accent group-hover:scale-110 transition-transform" />
+                  <span>Responsive & accessible UI/UX design</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Connect With Me */}
+            <div className="text-center md:text-right">
+              <h3 className="font-semibold text-foreground mb-3 text-lg">
+                Connect With Me
+              </h3>
+              <div className="flex flex-wrap justify-center md:justify-end gap-3 mb-3">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon;
+                  return (
+                    <a
+                      key={social.name}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-2 bg-secondary rounded-lg border border-border transition-all duration-300 hover:scale-110 hover:border-primary/50 hover:-translate-y-1 ${social.color}`}
+                      aria-label={social.name}
+                    >
+                      <Icon />
+                    </a>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Alex Morales Trevisan
+              </p>
+            </div>
           </div>
         </div>
 
