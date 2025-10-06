@@ -178,6 +178,34 @@ const InfoFooter = () => {
     { label: "Software Engineering", icon: Rocket },
   ];
 
+  // Assign theme colors for alternating icons
+  const skillColors = ["text-red-500", "text-success", "text-yellow-400"];
+  const skillBgColors = [
+    "bg-red-200/30",
+    "bg-green-200/30",
+    "bg-yellow-200/30",
+  ];
+
+  // Helper to get Tailwind class for a radial gradient based on text color
+  const getRadialGradientClass = (textColorClass: string) => {
+    switch (textColorClass) {
+      case "text-success":
+        return "from-success/30 to-transparent";
+      case "text-accent":
+        return "from-accent/30 to-transparent";
+      case "text-warning":
+        return "from-warning/30 to-transparent";
+      case "text-primary":
+        return "from-primary/30 to-transparent";
+      case "text-red-500": // For skills, if needed (already handled there but good to generalize)
+        return "from-red-500/30 to-transparent";
+      case "text-yellow-400": // For skills
+        return "from-yellow-400/30 to-transparent";
+      default:
+        return "from-gray-500/30 to-transparent";
+    }
+  };
+
   return (
     <footer className="bg-background border-t border-border mt-16">
       <div className="w-full px-4 py-12">
@@ -197,36 +225,55 @@ const InfoFooter = () => {
         <div className="w-full mb-8">
           <div className="max-w-7xl mx-auto bg-gradient-to-r from-primary/5 via-accent/5 to-warning/5 rounded-xl p-6 border border-border">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center group cursor-default">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Target className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
-                  <div className="text-3xl font-bold text-primary">
+              {/* Model Accuracy Green */}
+              <div className="relative text-center group cursor-default p-4 rounded-lg">
+                {" "}
+                {/* Added relative and padding */}
+                <div
+                  className={`absolute inset-0 w-full h-full bg-gradient-to-radial ${getRadialGradientClass("text-success")} opacity-20 filter blur-3xl rounded-lg`}
+                ></div>
+                <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
+                  {" "}
+                  {/* Added relative z-10 */}
+                  <Target className="w-5 h-5 text-success group-hover:scale-110 transition-transform" />
+                  <div className="text-3xl font-bold text-success">
                     {animatedStats.accuracy}%
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground relative z-10">
                   Model Accuracy
-                </div>
+                </div>{" "}
+                {/* Added relative z-10 */}
               </div>
 
-              <div className="text-center group cursor-default">
-                <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="relative text-center group cursor-default p-4 rounded-lg">
+                {" "}
+                {/* Added relative and padding */}
+                <div
+                  className={`absolute inset-0 w-full h-full bg-gradient-to-radial ${getRadialGradientClass("text-accent")} opacity-20 filter blur-3xl rounded-lg`}
+                ></div>
+                <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
                   <Zap className="w-5 h-5 text-accent group-hover:scale-110 transition-transform" />
                   <div className="text-3xl font-bold text-accent">
                     {animatedStats.predictions}+
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground relative z-10">
                   Match Results Analyzed
                 </div>
               </div>
 
-              <div className="text-center group cursor-default">
-                <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="relative text-center group cursor-default p-4 rounded-lg">
+                {" "}
+                {/* Added relative and padding */}
+                <div
+                  className={`absolute inset-0 w-full h-full bg-gradient-to-radial ${getRadialGradientClass("text-warning")} opacity-20 filter blur-3xl rounded-lg`}
+                ></div>
+                <div className="flex items-center justify-center gap-2 mb-2 relative z-10">
                   <Sparkles className="w-5 h-5 text-warning group-hover:scale-110 transition-transform" />
                   <div className="text-3xl font-bold text-warning">Live</div>
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground relative z-10">
                   Website Fully Deployed
                 </div>
               </div>
@@ -253,9 +300,15 @@ const InfoFooter = () => {
                 >
                   <button
                     onClick={() => toggleSection(section.id)}
-                    className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-secondary/50 transition-colors group"
+                    className="relative w-full px-6 py-5 flex items-center justify-between text-left hover:bg-secondary/50 transition-colors group"
                   >
-                    <div className="flex items-center gap-4">
+                    {/* Blurred radial background for the icon */}
+                    <div
+                      className={`absolute left-0 top-0 w-24 h-full bg-gradient-to-radial ${getRadialGradientClass(section.iconColor)} opacity-20 filter blur-3xl`}
+                    ></div>
+                    <div className="flex items-center gap-4 relative z-10">
+                      {" "}
+                      {/* Added relative z-10 */}
                       <div
                         className={`p-2 rounded-lg bg-gradient-to-br ${section.gradient} group-hover:scale-110 transition-transform duration-300`}
                       >
@@ -266,9 +319,9 @@ const InfoFooter = () => {
                       </span>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <ChevronUp className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors relative z-10" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors relative z-10" />
                     )}
                   </button>
 
@@ -316,15 +369,24 @@ const InfoFooter = () => {
               Technical Skills Demonstrated
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {skills.map((skill) => {
+              {skills.map((skill, index) => {
                 const SkillIcon = skill.icon;
+                const colorClass = skillColors[index % skillColors.length];
+                // skillBgColors already handles the blurred background, so no change here.
                 return (
                   <div
                     key={skill.label}
-                    className="text-center p-4 bg-card rounded-lg hover:bg-secondary transition-all duration-300 hover:scale-105 cursor-default border border-border group"
+                    className="relative text-center p-4 bg-card rounded-lg hover:bg-secondary transition-all duration-300 hover:scale-105 cursor-default border border-border group"
                   >
-                    <SkillIcon className="w-8 h-8 mx-auto mb-2 text-primary group-hover:text-accent transition-colors" />
-                    <div className="text-sm font-medium text-foreground">
+                    {/* Colored blurred background (already existing and working) */}
+                    <div
+                      className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full filter blur-3xl opacity-30 pointer-events-none bg-gradient-to-radial ${getRadialGradientClass(colorClass)}`}
+                    ></div>
+
+                    <SkillIcon
+                      className={`w-8 h-8 mx-auto mb-2 ${colorClass} relative z-10 transition-colors`}
+                    />
+                    <div className="text-sm font-medium text-foreground relative z-10">
                       {skill.label}
                     </div>
                   </div>
@@ -343,17 +405,40 @@ const InfoFooter = () => {
                 Project Highlights
               </h3>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2 group cursor-default">
-                  <Shield className="w-4 h-4 text-success group-hover:scale-110 transition-transform" />
-                  <span>Production-ready deployment pipeline</span>
+                <div className="flex items-center gap-2 group cursor-default relative">
+                  {" "}
+                  {/* Added relative */}
+                  <div
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-radial ${getRadialGradientClass("text-success")} opacity-20 filter blur-2xl rounded-full`}
+                  ></div>
+                  <Shield className="w-4 h-4 text-success group-hover:scale-110 transition-transform relative z-10" />{" "}
+                  {/* Added relative z-10 */}
+                  <span className="relative z-10">
+                    Production-ready deployment pipeline
+                  </span>{" "}
+                  {/* Added relative z-10 */}
                 </div>
-                <div className="flex items-center gap-2 group cursor-default">
-                  <Zap className="w-4 h-4 text-warning group-hover:scale-110 transition-transform" />
-                  <span>Real-time data processing & predictions</span>
+                <div className="flex items-center gap-2 group cursor-default relative">
+                  {" "}
+                  {/* Added relative */}
+                  <div
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-radial ${getRadialGradientClass("text-warning")} opacity-20 filter blur-2xl rounded-full`}
+                  ></div>
+                  <Zap className="w-4 h-4 text-warning group-hover:scale-110 transition-transform relative z-10" />
+                  <span className="relative z-10">
+                    Real-time data processing & predictions
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 group cursor-default">
-                  <Users className="w-4 h-4 text-accent group-hover:scale-110 transition-transform" />
-                  <span>Responsive & accessible UI/UX design</span>
+                <div className="flex items-center gap-2 group cursor-default relative">
+                  {" "}
+                  {/* Added relative */}
+                  <div
+                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-radial ${getRadialGradientClass("text-accent")} opacity-20 filter blur-2xl rounded-full`}
+                  ></div>
+                  <Users className="w-4 h-4 text-accent group-hover:scale-110 transition-transform relative z-10" />
+                  <span className="relative z-10">
+                    Responsive & accessible UI/UX design
+                  </span>
                 </div>
               </div>
             </div>
@@ -366,6 +451,7 @@ const InfoFooter = () => {
               <div className="flex flex-wrap justify-center md:justify-end gap-3 mb-3">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
+                  // No radial blur for social icons as per discussion, existing styles are good.
                   return (
                     <a
                       key={social.name}

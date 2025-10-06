@@ -133,6 +133,14 @@ The system includes comprehensive monitoring:
 - DevOps: CI/CD, deployment automation, monitoring
 - Software Engineering: Version control, testing, documentation, code quality
 
+## Social Links
+
+- **LinkedIn:** [https://www.linkedin.com/in/alex-morales-dev/](https://www.linkedin.com/in/alex-morales-dev/)
+- **GitHub:** [https://github.com/AlexMoralesDev](https://github.com/AlexMoralesDev)
+- **YouTube:** [https://www.youtube.com/@alexmoralesdev](https://www.youtube.com/@alexmoralesdev)
+- **Instagram:** [https://www.instagram.com/alexmoralesdev](https://www.instagram.com/alexmoralesdev)
+- **TikTok:** [https://www.tiktok.com/@alexmoralesdev](https://www.tiktok.com/@alexmoralesdev)
+
 ## Future Enhancements
 
 - Incorporate additional data sources (weather, injuries, referee statistics)
@@ -148,5 +156,4 @@ This application is designed for analytical and educational purposes. Sports pre
 ---
 
 **Repository maintained by:** [Alex Morales Trevisan]  
-**Contact:** [https://www.linkedin.com/in/alex-morales-dev/]  
 **Last Updated:** October 2025
