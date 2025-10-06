@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import MatchCard from "@/components/MatchCard";
 import StatsCard from "@/components/StatsCard";
+import InfoFooter from "@/components/InfoFooter"; // ← Capitalized
 import { Trophy, Target, TrendingUp } from "lucide-react";
 
 // Assuming these are your API functions and types
@@ -201,7 +202,7 @@ const Index = () => {
   // 6. Main Render
   return (
     <div className="min-h-screen bg-background">
-      {Header} {/* The Header is now here, guaranteed to show */}
+      {Header}
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -307,6 +308,8 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
+      {/* Interactive Footer */}
+      <InfoFooter /> {/* ← Self-closing tag with capital I */}
     </div>
   );
 };
