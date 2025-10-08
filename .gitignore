@@ -1,1 +1,22 @@
-*.env
+# Environment files
+.env
+.env.development
+.env.local
+
+# Local development
+predictions_dev.db
+backend/logs/*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
