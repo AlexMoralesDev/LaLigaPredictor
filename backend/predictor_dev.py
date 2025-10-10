@@ -1,9 +1,7 @@
-import json
 import os
 import time
 import warnings
 from collections import defaultdict
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -13,61 +11,34 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 
 warnings.filterwarnings("ignore")
-
 load_dotenv()
-API_KEY = os.getenv("FOOTBALL_API_KEY")
 
+API_KEY = os.getenv("FOOTBALL_API_KEY")
 if not API_KEY:
-    print("ERROR: FOOTBALL_API_KEY not found in .env file")
+    print("ERROR: FOOTBALL_API_KEY not found")
     exit(1)
 
-headers = {"X-Auth-Token": API_KEY}
 
-
-class SimplePredictor:
-    """Simplified La Liga predictor for testing features"""
-
-    def __init__(self, seasons=["2023", "2024", "2025"]):
-        self.seasons = seasons
-        self.raw_data = {}
+class LaLigaPredictor:
+    def __init__(self):
         self.matches_df = None
-        self.team_stats = None
 
-    def fetch_data(self):
-        """Fetch data from API"""
-        print("Fetching data from API...")
+    def fetch_data(self, seasons=["2023", "2024", "2025"]):
+        headers = {"X-Auth-Token": API_KEY}
+        all_matches = []
 
-        for season in self.seasons:
+        for season in seasons:
             url = f"https://api.football-data.org/v4/competitions/2014/matches?season={season}"
+            response = requests.get(url, headers=headers, timeout=10)
 
-            try:
-                print(f"  Fetching {season} season...")
-                response = requests.get(url, headers=headers, timeout=10)
-
-                if response.status_code == 200:
-                    self.raw_data[season] = response.json()
-                    print(f"  ✓ {season} season fetched")
-                elif response.status_code == 429:
-                    print(f"  Rate limit hit. Waiting...")
+            if response.status_code != 200:
+                print(f"Failed to fetch {season}: {response.status_code}")
+                if response.status_code == 429:
                     time.sleep(5)
-                else:
-                    print(f"  Warning: Status code {response.status_code}")
+                continue
 
-            except Exception as e:
-                print(f"  Error: {e}")
-                raise
-
-        print("✓ All data fetched\n")
-        return self
-
-    def prepare_matches(self):
-        """Convert raw data to DataFrame"""
-        print("Preparing matches DataFrame...")
-
-        matches_list = []
-        for season, data in self.raw_data.items():
-            for match in data["matches"]:
-                matches_list.append(
+            for match in response.json()["matches"]:
+                all_matches.append(
                     {
                         "season": season,
                         "date": pd.to_datetime(match["utcDate"]),
@@ -79,45 +50,34 @@ class SimplePredictor:
                         "home_score": match["score"]["fullTime"]["home"],
                         "away_score": match["score"]["fullTime"]["away"],
                         "result": match["score"]["winner"],
-                        "status": match["status"],
                     }
                 )
 
         self.matches_df = (
-            pd.DataFrame(matches_list).sort_values("date").reset_index(drop=True)
-        )
-
-        completed = len(self.matches_df[self.matches_df["result"].notna()])
-        upcoming = len(self.matches_df[self.matches_df["result"].isna()])
-
-        print(
-            f"✓ Prepared {len(self.matches_df)} matches ({completed} completed, {upcoming} upcoming)\n"
+            pd.DataFrame(all_matches).sort_values("date").reset_index(drop=True)
         )
         return self
 
-    def calculate_team_stats(self):
-        """Calculate rolling team statistics"""
-        print("Calculating team statistics...")
-
+    def calculate_stats(self):
+        # Rolling team stats with ELO-style rating
         stats = defaultdict(
             lambda: {
                 "matches": 0,
                 "points": 0,
-                "wins": 0,
-                "draws": 0,
-                "losses": 0,
-                "goals_for": 0,
-                "goals_against": 0,
-                "home_points": 0,
-                "away_points": 0,
+                "gf": 0,
+                "ga": 0,
                 "home_matches": 0,
+                "home_points": 0,
                 "away_matches": 0,
-                "recent_form": [],  # Last 5 results (3=win, 1=draw, 0=loss)
+                "away_points": 0,
+                "form": [],
+                "elo": 1500,  # Starting ELO rating
+                "goals_last_6": [],  # Goals scored in last 6 matches
+                "conceded_last_6": [],  # Goals conceded in last 6 matches
             }
         )
 
-        # Add columns for stats at time of match
-        stat_columns = [
+        cols = [
             "home_ppg",
             "away_ppg",
             "home_gd",
@@ -126,141 +86,186 @@ class SimplePredictor:
             "away_away_ppg",
             "home_form",
             "away_form",
+            "home_elo",
+            "away_elo",
+            "home_avg_goals_scored",
+            "away_avg_goals_scored",
+            "home_avg_goals_conceded",
+            "away_avg_goals_conceded",
         ]
-
-        for col in stat_columns:
+        for col in cols:
             self.matches_df[col] = np.nan
 
-        # Calculate stats chronologically
-        for idx, match in self.matches_df.iterrows():
-            home_id = match["home_team_id"]
-            away_id = match["away_team_id"]
+        for idx, row in self.matches_df.iterrows():
+            home_id = row["home_team_id"]
+            away_id = row["away_team_id"]
 
-            # Store stats BEFORE this match
-            home_stats = stats[home_id]
-            away_stats = stats[away_id]
+            # Store stats before match
+            h = stats[home_id]
+            a = stats[away_id]
 
-            self.matches_df.at[idx, "home_ppg"] = home_stats["points"] / max(
-                1, home_stats["matches"]
+            self.matches_df.at[idx, "home_ppg"] = h["points"] / max(1, h["matches"])
+            self.matches_df.at[idx, "away_ppg"] = a["points"] / max(1, a["matches"])
+            self.matches_df.at[idx, "home_gd"] = (h["gf"] - h["ga"]) / max(
+                1, h["matches"]
             )
-            self.matches_df.at[idx, "away_ppg"] = away_stats["points"] / max(
-                1, away_stats["matches"]
+            self.matches_df.at[idx, "away_gd"] = (a["gf"] - a["ga"]) / max(
+                1, a["matches"]
+            )
+            self.matches_df.at[idx, "home_home_ppg"] = h["home_points"] / max(
+                1, h["home_matches"]
+            )
+            self.matches_df.at[idx, "away_away_ppg"] = a["away_points"] / max(
+                1, a["away_matches"]
+            )
+            self.matches_df.at[idx, "home_form"] = (
+                np.mean(h["form"][-5:]) if h["form"] else 1.0
+            )
+            self.matches_df.at[idx, "away_form"] = (
+                np.mean(a["form"][-5:]) if a["form"] else 1.0
             )
 
-            self.matches_df.at[idx, "home_gd"] = (
-                home_stats["goals_for"] - home_stats["goals_against"]
-            ) / max(1, home_stats["matches"])
-            self.matches_df.at[idx, "away_gd"] = (
-                away_stats["goals_for"] - away_stats["goals_against"]
-            ) / max(1, away_stats["matches"])
+            # ELO ratings
+            self.matches_df.at[idx, "home_elo"] = h["elo"]
+            self.matches_df.at[idx, "away_elo"] = a["elo"]
 
-            self.matches_df.at[idx, "home_home_ppg"] = home_stats["home_points"] / max(
-                1, home_stats["home_matches"]
+            # Average goals scored/conceded in last 6 matches
+            self.matches_df.at[idx, "home_avg_goals_scored"] = (
+                np.mean(h["goals_last_6"]) if h["goals_last_6"] else 1.2
             )
-            self.matches_df.at[idx, "away_away_ppg"] = away_stats["away_points"] / max(
-                1, away_stats["away_matches"]
+            self.matches_df.at[idx, "away_avg_goals_scored"] = (
+                np.mean(a["goals_last_6"]) if a["goals_last_6"] else 1.2
+            )
+            self.matches_df.at[idx, "home_avg_goals_conceded"] = (
+                np.mean(h["conceded_last_6"]) if h["conceded_last_6"] else 1.2
+            )
+            self.matches_df.at[idx, "away_avg_goals_conceded"] = (
+                np.mean(a["conceded_last_6"]) if a["conceded_last_6"] else 1.2
             )
 
-            recent_home = (
-                home_stats["recent_form"][-5:] if home_stats["recent_form"] else [1.0]
-            )
-            recent_away = (
-                away_stats["recent_form"][-5:] if away_stats["recent_form"] else [1.0]
-            )
-            self.matches_df.at[idx, "home_form"] = np.mean(recent_home)
-            self.matches_df.at[idx, "away_form"] = np.mean(recent_away)
+            # Update stats after match (if completed)
+            if pd.notna(row["result"]):
+                h["matches"] += 1
+                a["matches"] += 1
+                h["home_matches"] += 1
+                a["away_matches"] += 1
+                h["gf"] += row["home_score"]
+                h["ga"] += row["away_score"]
+                a["gf"] += row["away_score"]
+                a["ga"] += row["home_score"]
 
-            # Update stats AFTER this match (if completed)
-            if pd.notna(match["result"]):
-                home_score = match["home_score"]
-                away_score = match["away_score"]
+                # Track goals in last 6 matches
+                h["goals_last_6"].append(row["home_score"])
+                h["conceded_last_6"].append(row["away_score"])
+                a["goals_last_6"].append(row["away_score"])
+                a["conceded_last_6"].append(row["home_score"])
 
-                # Update match counts
-                stats[home_id]["matches"] += 1
-                stats[away_id]["matches"] += 1
-                stats[home_id]["home_matches"] += 1
-                stats[away_id]["away_matches"] += 1
+                if len(h["goals_last_6"]) > 6:
+                    h["goals_last_6"] = h["goals_last_6"][-6:]
+                if len(h["conceded_last_6"]) > 6:
+                    h["conceded_last_6"] = h["conceded_last_6"][-6:]
+                if len(a["goals_last_6"]) > 6:
+                    a["goals_last_6"] = a["goals_last_6"][-6:]
+                if len(a["conceded_last_6"]) > 6:
+                    a["conceded_last_6"] = a["conceded_last_6"][-6:]
 
-                # Update goals
-                stats[home_id]["goals_for"] += home_score
-                stats[home_id]["goals_against"] += away_score
-                stats[away_id]["goals_for"] += away_score
-                stats[away_id]["goals_against"] += home_score
+                # Update ELO ratings
+                expected_home = 1 / (1 + 10 ** ((a["elo"] - h["elo"] - 100) / 400))
 
-                # Update points and form
-                if match["result"] == "HOME_TEAM":
-                    stats[home_id]["wins"] += 1
-                    stats[home_id]["points"] += 3
-                    stats[home_id]["home_points"] += 3
-                    stats[away_id]["losses"] += 1
-                    stats[home_id]["recent_form"].append(3)
-                    stats[away_id]["recent_form"].append(0)
-                elif match["result"] == "AWAY_TEAM":
-                    stats[away_id]["wins"] += 1
-                    stats[away_id]["points"] += 3
-                    stats[away_id]["away_points"] += 3
-                    stats[home_id]["losses"] += 1
-                    stats[home_id]["recent_form"].append(0)
-                    stats[away_id]["recent_form"].append(3)
-                else:  # DRAW
-                    stats[home_id]["draws"] += 1
-                    stats[away_id]["draws"] += 1
-                    stats[home_id]["points"] += 1
-                    stats[away_id]["points"] += 1
-                    stats[home_id]["home_points"] += 1
-                    stats[away_id]["away_points"] += 1
-                    stats[home_id]["recent_form"].append(1)
-                    stats[away_id]["recent_form"].append(1)
+                if row["result"] == "HOME_TEAM":
+                    actual_home = 1.0
+                    h["points"] += 3
+                    h["home_points"] += 3
+                    h["form"].append(3)
+                    a["form"].append(0)
+                elif row["result"] == "AWAY_TEAM":
+                    actual_home = 0.0
+                    a["points"] += 3
+                    a["away_points"] += 3
+                    h["form"].append(0)
+                    a["form"].append(3)
+                else:
+                    actual_home = 0.5
+                    h["points"] += 1
+                    a["points"] += 1
+                    h["home_points"] += 1
+                    a["away_points"] += 1
+                    h["form"].append(1)
+                    a["form"].append(1)
 
-                # Keep only last 10 results
-                if len(stats[home_id]["recent_form"]) > 10:
-                    stats[home_id]["recent_form"] = stats[home_id]["recent_form"][-10:]
-                if len(stats[away_id]["recent_form"]) > 10:
-                    stats[away_id]["recent_form"] = stats[away_id]["recent_form"][-10:]
+                # Update ELO with K=32
+                K = 32
+                h["elo"] = h["elo"] + K * (actual_home - expected_home)
+                a["elo"] = a["elo"] + K * ((1 - actual_home) - (1 - expected_home))
 
-        self.team_stats = stats
-        print(f"✓ Statistics calculated for {len(stats)} teams\n")
+                if len(h["form"]) > 10:
+                    h["form"] = h["form"][-10:]
+                if len(a["form"]) > 10:
+                    a["form"] = a["form"][-10:]
+
         return self
 
     def create_features(self, df):
-        """Create feature set for modeling"""
-        features = pd.DataFrame(index=df.index)
-
-        # Core strength features
-        features["ppg_diff"] = df["home_ppg"].fillna(1.5) - df["away_ppg"].fillna(1.5)
-        features["gd_diff"] = df["home_gd"].fillna(0) - df["away_gd"].fillna(0)
-        features["home_advantage"] = df["home_home_ppg"].fillna(1.5) - df[
+        X = pd.DataFrame()
+        X["ppg_diff"] = df["home_ppg"].fillna(1.5) - df["away_ppg"].fillna(1.5)
+        X["gd_diff"] = df["home_gd"].fillna(0) - df["away_gd"].fillna(0)
+        X["home_advantage"] = df["home_home_ppg"].fillna(1.5) - df[
             "away_away_ppg"
         ].fillna(1.5)
+        X["form_diff"] = df["home_form"].fillna(1.0) - df["away_form"].fillna(1.0)
 
-        # Form features
-        features["form_diff"] = df["home_form"].fillna(1.0) - df["away_form"].fillna(
-            1.0
+        # ELO difference - proven most effective feature
+        X["elo_diff"] = df["home_elo"].fillna(1500) - df["away_elo"].fillna(1500)
+
+        # Attack vs Defense matchup
+        X["attack_vs_defense"] = df["home_avg_goals_scored"].fillna(1.2) - df[
+            "away_avg_goals_conceded"
+        ].fillna(1.2)
+        X["defense_vs_attack"] = df["away_avg_goals_scored"].fillna(1.2) - df[
+            "home_avg_goals_conceded"
+        ].fillna(1.2)
+
+        X["strength"] = (
+            X["ppg_diff"] * 0.3
+            + X["home_advantage"] * 0.25
+            + X["form_diff"] * 0.2
+            + X["elo_diff"] * 0.01
+            + X["attack_vs_defense"] * 0.125
+            + X["defense_vs_attack"] * 0.125
         )
+        X["matchday"] = df["matchday"]
+        return X
 
-        # Combined features
-        features["overall_strength"] = (
-            features["ppg_diff"] * 0.4
-            + features["home_advantage"] * 0.3
-            + features["form_diff"] * 0.3
-        )
+    def test(
+        self, train_seasons=["2023", "2024"], test_season="2025", test_matchdays=None
+    ):
+        # Split data
+        train_df = self.matches_df[
+            self.matches_df["season"].isin(train_seasons)
+            & self.matches_df["result"].notna()
+        ]
 
-        # Match context
-        features["matchday"] = df["matchday"]
-        features["is_early_season"] = (df["matchday"] <= 8).astype(int)
+        test_df = self.matches_df[
+            (self.matches_df["season"] == test_season)
+            & self.matches_df["result"].notna()
+        ]
 
-        return features
+        if test_matchdays:
+            test_df = test_df[test_df["matchday"].isin(test_matchdays)]
 
-    def create_target(self, df):
-        """Create target variable (0=away win, 1=home win, 2=draw)"""
+        if len(test_df) == 0:
+            print("No test data")
+            return
+
+        # Target: 0=away, 1=home, 2=draw
         target_map = {"HOME_TEAM": 1, "AWAY_TEAM": 0, "DRAW": 2}
-        return df["result"].map(target_map)
 
-    def train_model(self, train_df):
-        """Train model on training data"""
         X_train = self.create_features(train_df)
-        y_train = self.create_target(train_df)
+        y_train = train_df["result"].map(target_map)
+        X_test = self.create_features(test_df)
+        y_test = test_df["result"].map(target_map)
 
+        # Train
         model = RandomForestClassifier(
             n_estimators=200,
             max_depth=10,
@@ -268,284 +273,47 @@ class SimplePredictor:
             random_state=42,
             class_weight="balanced",
         )
-
         model.fit(X_train, y_train)
-        return model
-
-    def evaluate_model(self, model, train_df, test_df):
-        """Evaluate model on both training and test sets"""
-        print("\n" + "=" * 60)
-        print("MODEL EVALUATION")
-        print("=" * 60 + "\n")
-
-        # Training performance
-        X_train = self.create_features(train_df)
-        y_train = self.create_target(train_df)
-        train_acc = model.score(X_train, y_train) * 100
-        print(f"Training Set:")
-        print(f"  Matches: {len(train_df)}")
-        print(f"  Accuracy: {train_acc:.1f}%\n")
-
-        # Cross-validation on training set
-        cv_scores = cross_val_score(model, X_train, y_train, cv=5)
-        print(f"Cross-Validation (5-fold):")
-        print(f"  Mean: {cv_scores.mean()*100:.1f}%")
-        print(f"  Std: ±{cv_scores.std()*100:.1f}%\n")
-
-        # Test set performance
-        X_test = self.create_features(test_df)
-        y_test = self.create_target(test_df)
-
-        predictions = model.predict(X_test)
-        test_acc = model.score(X_test, y_test) * 100
-
-        # Calculate per-outcome accuracy
-        home_wins = y_test == 1
-        away_wins = y_test == 0
-        draws = y_test == 2
-
-        home_acc = (
-            (predictions[home_wins] == 1).sum() / max(1, home_wins.sum()) * 100
-            if home_wins.sum() > 0
-            else 0
-        )
-        away_acc = (
-            (predictions[away_wins] == 0).sum() / max(1, away_wins.sum()) * 100
-            if away_wins.sum() > 0
-            else 0
-        )
-        draw_acc = (
-            (predictions[draws] == 2).sum() / max(1, draws.sum()) * 100
-            if draws.sum() > 0
-            else 0
-        )
-
-        print(f"Test Set:")
-        print(f"  Matches: {len(test_df)}")
-        print(f"  Overall Accuracy: {test_acc:.1f}%")
-        print(f"\n  Breakdown:")
-        print(f"    Home Wins: {home_wins.sum()} matches - {home_acc:.1f}% accuracy")
-        print(f"    Away Wins: {away_wins.sum()} matches - {away_acc:.1f}% accuracy")
-        print(f"    Draws: {draws.sum()} matches - {draw_acc:.1f}% accuracy")
-
-        print(f"\n{'='*60}\n")
-
-        return {
-            "train_accuracy": train_acc,
-            "test_accuracy": test_acc,
-            "cv_mean": cv_scores.mean() * 100,
-            "cv_std": cv_scores.std() * 100,
-            "home_accuracy": home_acc,
-            "away_accuracy": away_acc,
-            "draw_accuracy": draw_acc,
-        }
-
-    def test_on_completed_matches(
-        self, train_seasons=["2023", "2024"], test_season="2025", test_matchdays=None
-    ):
-        """
-        Test the model on already completed matches
-
-        Args:
-            train_seasons: List of seasons to train on
-            test_season: Season to test on
-            test_matchdays: Specific matchdays to test (None = all completed)
-        """
-        print("\n" + "=" * 60)
-        print("TESTING ON COMPLETED MATCHES")
-        print("=" * 60 + "\n")
-
-        # Get training data
-        train_matches = self.matches_df[
-            self.matches_df["season"].isin(train_seasons)
-            & self.matches_df["result"].notna()
-        ].copy()
-
-        # Get test data
-        test_matches = self.matches_df[
-            (self.matches_df["season"] == test_season)
-            & self.matches_df["result"].notna()
-        ].copy()
-
-        # Filter by matchdays if specified
-        if test_matchdays is not None:
-            if isinstance(test_matchdays, int):
-                test_matchdays = [test_matchdays]
-            test_matches = test_matches[test_matches["matchday"].isin(test_matchdays)]
-
-        if len(test_matches) == 0:
-            print("No completed test matches found!")
-            return None
-
-        print(f"Training: {train_seasons} seasons ({len(train_matches)} matches)")
-        print(f"Testing: {test_season} season ({len(test_matches)} matches)")
-
-        if test_matchdays:
-            print(f"Test Matchdays: {test_matchdays}")
-
-        # Train model
-        print("\nTraining model...")
-        model = self.train_model(train_matches)
-        print("✓ Model trained")
 
         # Evaluate
-        results = self.evaluate_model(model, train_matches, test_matches)
+        train_acc = model.score(X_train, y_train) * 100
+        test_acc = model.score(X_test, y_test) * 100
+        cv_scores = cross_val_score(model, X_train, y_train, cv=5)
 
-        # Show detailed predictions
-        self._show_test_predictions(model, test_matches)
+        print(f"\nTrain: {len(train_df)} matches | {train_acc:.1f}% acc")
+        print(f"CV: {cv_scores.mean()*100:.1f}% (±{cv_scores.std()*100:.1f}%)")
+        print(f"Test: {len(test_df)} matches | {test_acc:.1f}% acc")
 
-        return results
+        # Per-outcome breakdown
+        preds = model.predict(X_test)
+        for outcome, label in [(1, "Home"), (0, "Away"), (2, "Draw")]:
+            mask = y_test == outcome
+            if mask.sum() > 0:
+                acc = (preds[mask] == outcome).sum() / mask.sum() * 100
+                print(f"  {label}: {mask.sum()} matches, {acc:.1f}% acc")
 
-    def _show_test_predictions(self, model, test_df, max_show=20):
-        """Show detailed predictions for test matches"""
-        print("=" * 60)
-        print("SAMPLE PREDICTIONS (showing first 20)")
-        print("=" * 60 + "\n")
+        # Show sample predictions
+        print(f"\nSample predictions (first 10):")
+        pred_map = {0: "A", 1: "H", 2: "D"}
 
-        X_test = self.create_features(test_df)
-        predictions = model.predict(X_test)
-        probabilities = model.predict_proba(X_test)
-
-        pred_map = {0: "Away Win", 1: "Home Win", 2: "Draw"}
-        actual_map = {"HOME_TEAM": "Home Win", "AWAY_TEAM": "Away Win", "DRAW": "Draw"}
-
-        correct_count = 0
-
-        for i, (idx, match) in enumerate(test_df.head(max_show).iterrows()):
-            pred_idx = predictions[i]
-            probs = probabilities[i]
-
-            prediction = pred_map[pred_idx]
-            actual = actual_map[match["result"]]
-            is_correct = prediction == actual
-            correct_count += is_correct
-
-            status = "✓" if is_correct else "✗"
-
+        for i, (idx, row) in enumerate(test_df.head(10).iterrows()):
+            pred = pred_map[preds[i]]
+            actual = pred_map[y_test.iloc[i]]
+            check = "✓" if pred == actual else "✗"
             print(
-                f"{match['home_team']} {int(match['home_score'])}-{int(match['away_score'])} {match['away_team']}"
+                f"{row['home_team'][:15]:15} {int(row['home_score'])}-{int(row['away_score'])} {row['away_team'][:15]:15} | Pred:{pred} Act:{actual} {check}"
             )
-            print(
-                f"Predicted: {prediction} (H:{probs[1]*100:.0f}% D:{probs[2]*100:.0f}% A:{probs[0]*100:.0f}%)"
-            )
-            print(f"Actual: {actual} {status}\n")
 
-        if len(test_df) > max_show:
-            print(f"... and {len(test_df) - max_show} more matches\n")
-
-        print(f"Shown: {correct_count}/{min(max_show, len(test_df))} correct\n")
-
-    def run_standard_test(self):
-        """Run standard test: train on 2023+2024, test on first half of 2025"""
-        print("\n" + "=" * 60)
-        print("STANDARD TEST: Train 2023-2024, Test 2025 (Matchdays 1-15)")
-        print("=" * 60)
-
-        return self.test_on_completed_matches(
-            train_seasons=["2023", "2024"],
-            test_season="2025",
-            test_matchdays=list(range(1, 16)),  # First half of season
-        )
-
-    def run_cross_season_test(self):
-        """Run cross-season test: train on 2023, test on 2024"""
-        print("\n" + "=" * 60)
-        print("CROSS-SEASON TEST: Train 2023, Test 2024")
-        print("=" * 60)
-
-        return self.test_on_completed_matches(
-            train_seasons=["2023"],
-            test_season="2024",
-            test_matchdays=None,  # All completed matches
-        )
-
-    def run_rolling_test(self, test_season="2025", test_weeks=5):
-        """Test on recent weeks using all prior data"""
-        print("\n" + "=" * 60)
-        print(f"ROLLING TEST: Test last {test_weeks} completed weeks of {test_season}")
-        print("=" * 60)
-
-        # Find last completed matchdays
-        season_matches = self.matches_df[
-            (self.matches_df["season"] == test_season)
-            & self.matches_df["result"].notna()
-        ]
-
-        completed_matchdays = sorted(season_matches["matchday"].unique())
-
-        if len(completed_matchdays) < test_weeks:
-            print(f"Only {len(completed_matchdays)} completed matchdays available")
-            test_matchdays = completed_matchdays
-        else:
-            test_matchdays = completed_matchdays[-test_weeks:]
-
-        print(f"Testing on matchdays: {test_matchdays}\n")
-
-        # Training: everything before test matchdays
-        min_test_matchday = min(test_matchdays)
-
-        train_matches = self.matches_df[
-            (
-                (self.matches_df["season"] == test_season)
-                & (self.matches_df["matchday"] < min_test_matchday)
-            )
-            | ((self.matches_df["season"].isin(["2023", "2024"])))
-        ].copy()
-        train_matches = train_matches[train_matches["result"].notna()]
-
-        test_matches = season_matches[
-            season_matches["matchday"].isin(test_matchdays)
-        ].copy()
-
-        print(f"Training on {len(train_matches)} matches")
-        print(f"Testing on {len(test_matches)} matches")
-
-        # Train and evaluate
-        print("\nTraining model...")
-        model = self.train_model(train_matches)
-        print("✓ Model trained")
-
-        results = self.evaluate_model(model, train_matches, test_matches)
-        self._show_test_predictions(model, test_matches)
-
-        return results
-
-
-def main():
-    """Main execution"""
-    print("\n" + "=" * 60)
-    print("SIMPLE LA LIGA PREDICTOR - TEST VERSION")
-    print("=" * 60 + "\n")
-
-    # Initialize and prepare data
-    predictor = SimplePredictor()
-    predictor.fetch_data()
-    predictor.prepare_matches()
-    predictor.calculate_team_stats()
-
-    # Run standard test
-    print("\nRunning standard test...")
-    predictor.run_standard_test()
-
-    # Uncomment to run other tests:
-    # predictor.run_cross_season_test()
-    # predictor.run_rolling_test(test_weeks=5)
-
-    # Custom test example:
-    # predictor.test_on_completed_matches(
-    #     train_seasons=['2023', '2024'],
-    #     test_season='2025',
-    #     test_matchdays=[10, 11, 12]
-    # )
+        return test_acc
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\n\nProcess interrupted by user")
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
-        import traceback
+    predictor = LaLigaPredictor()
+    predictor.fetch_data().calculate_stats()
 
-        traceback.print_exc()
+    # Test on first 15 matchdays of 2025
+    predictor.test(
+        train_seasons=["2023", "2024"],
+        test_season="2025",
+        test_matchdays=list(range(1, 16)),
+    )
