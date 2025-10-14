@@ -44,7 +44,22 @@ class LaLigaPredictor:
             )
         )
 
-    def fetch_data(self, seasons=["2023", "2024", "2025"]):
+    def fetch_data(self, seasons=None):
+        if seasons is None:
+            seasons = [
+                "2015",
+                "2016",
+                "2017",
+                "2018",
+                "2019",
+                "2020",
+                "2021",
+                "2022",
+                "2023",
+                "2024",
+                "2025",
+            ]
+
         headers = {"X-Auth-Token": API_KEY}
         all_matches = []
 
@@ -158,7 +173,6 @@ class LaLigaPredictor:
             )
             h, a = stats[home_id], stats[away_id]
 
-            # Basic stats
             self.matches_df.at[idx, "home_ppg"] = h["points"] / max(1, h["matches"])
             self.matches_df.at[idx, "away_ppg"] = a["points"] / max(1, a["matches"])
             self.matches_df.at[idx, "home_gd"] = (h["gf"] - h["ga"]) / max(
@@ -174,7 +188,6 @@ class LaLigaPredictor:
                 1, a["away_matches"]
             )
 
-            # Form
             self.matches_df.at[idx, "home_form"] = (
                 np.mean(h["form"][-5:]) if h["form"] else 1.0
             )
@@ -182,11 +195,9 @@ class LaLigaPredictor:
                 np.mean(a["form"][-5:]) if a["form"] else 1.0
             )
 
-            # Elo
             self.matches_df.at[idx, "home_elo"] = h["elo"]
             self.matches_df.at[idx, "away_elo"] = a["elo"]
 
-            # Attack and defense strength (relative to league average)
             home_attack = (h["gf"] / max(1, h["matches"])) / league_avg_goals
             away_attack = (a["gf"] / max(1, a["matches"])) / league_avg_goals
             home_defense = (h["ga"] / max(1, h["matches"])) / league_avg_goals
@@ -205,7 +216,6 @@ class LaLigaPredictor:
                 away_defense if a["matches"] > 0 else 1.0
             )
 
-            # Rolling form windows (3, 5 matches)
             self.matches_df.at[idx, "home_form_3"] = (
                 np.mean(h["form"][-3:]) if len(h["form"]) >= 3 else 1.0
             )
@@ -219,7 +229,6 @@ class LaLigaPredictor:
                 np.mean(a["form"][-5:]) if len(a["form"]) >= 5 else 1.0
             )
 
-            # Rolling goal windows
             self.matches_df.at[idx, "home_goals_3"] = (
                 np.mean(h["goals_last_3"]) if h["goals_last_3"] else 1.2
             )
@@ -259,7 +268,6 @@ class LaLigaPredictor:
                 np.mean(a["conceded_last_10"]) if a["conceded_last_10"] else 1.2
             )
 
-            # League position (simulated by points ranking at this matchday)
             matchday_stats = []
             for team_id, team_stat in stats.items():
                 if team_stat["matches"] > 0:
@@ -283,7 +291,6 @@ class LaLigaPredictor:
                 away_id, 10
             )
 
-            # H2H stats
             h2h = self.h2h_stats[home_id][away_id]
             if h2h["matches"] > 0:
                 total_points = h2h["home_wins"] * 3 + h2h["draws"]
@@ -297,7 +304,6 @@ class LaLigaPredictor:
                 self.matches_df.at[idx, "h2h_home_win_rate"] = 0.5
                 self.matches_df.at[idx, "h2h_home_goals_diff"] = 0.0
 
-            # Referee bias
             if ref:
                 ref_h, ref_a = (
                     self.ref_stats[ref][home_id],
@@ -323,7 +329,6 @@ class LaLigaPredictor:
                 self.matches_df.at[idx, "ref_home_bias"] = 0.5
                 self.matches_df.at[idx, "ref_away_bias"] = 0.5
 
-            # Update stats after match
             if pd.notna(row["result"]):
                 h["matches"] += 1
                 a["matches"] += 1
@@ -334,7 +339,6 @@ class LaLigaPredictor:
                 a["gf"] += row["away_score"]
                 a["ga"] += row["home_score"]
 
-                # Update rolling windows
                 h["goals_last_3"].append(row["home_score"])
                 h["conceded_last_3"].append(row["away_score"])
                 a["goals_last_3"].append(row["away_score"])
@@ -368,7 +372,6 @@ class LaLigaPredictor:
                     a["goals_last_10"] = a["goals_last_10"][-10:]
                     a["conceded_last_10"] = a["conceded_last_10"][-10:]
 
-                # Update H2H
                 h2h["matches"] += 1
                 h2h["home_gf"] += row["home_score"]
                 h2h["home_ga"] += row["away_score"]
@@ -379,7 +382,6 @@ class LaLigaPredictor:
                 else:
                     h2h["draws"] += 1
 
-                # Update referee stats
                 if ref:
                     ref_h, ref_a = (
                         self.ref_stats[ref][home_id],
@@ -396,7 +398,6 @@ class LaLigaPredictor:
                         ref_h["draws"] += 1
                         ref_a["draws"] += 1
 
-                # Update Elo
                 expected_home = 1 / (1 + 10 ** ((a["elo"] - h["elo"] - 100) / 400))
 
                 if row["result"] == "HOME_TEAM":
@@ -434,7 +435,6 @@ class LaLigaPredictor:
     def create_features(self, df):
         X = pd.DataFrame()
 
-        # Core differentials
         X["ppg_diff"] = df["home_ppg"].fillna(1.5) - df["away_ppg"].fillna(1.5)
         X["gd_diff"] = df["home_gd"].fillna(0) - df["away_gd"].fillna(0)
         X["home_advantage"] = df["home_home_ppg"].fillna(1.5) - df[
@@ -442,7 +442,6 @@ class LaLigaPredictor:
         ].fillna(1.5)
         X["elo_diff"] = df["home_elo"].fillna(1500) - df["away_elo"].fillna(1500)
 
-        # Expected goals proxy (attack strength vs defense strength)
         X["xg_home"] = df["home_attack_strength"].fillna(1.0) * df[
             "away_defense_strength"
         ].fillna(1.0)
@@ -451,11 +450,9 @@ class LaLigaPredictor:
         ].fillna(1.0)
         X["xg_diff"] = X["xg_home"] - X["xg_away"]
 
-        # Rolling form windows
         X["form_3_diff"] = df["home_form_3"].fillna(1.0) - df["away_form_3"].fillna(1.0)
         X["form_5_diff"] = df["home_form_5"].fillna(1.0) - df["away_form_5"].fillna(1.0)
 
-        # Rolling goal metrics
         X["goals_3_diff"] = df["home_goals_3"].fillna(1.2) - df["away_goals_3"].fillna(
             1.2
         )
@@ -476,12 +473,10 @@ class LaLigaPredictor:
             "home_conceded_10"
         ].fillna(1.2)
 
-        # League position differential (inverted - lower position is better)
         X["position_diff"] = df["away_league_position"].fillna(10) - df[
             "home_league_position"
         ].fillna(10)
 
-        # Attack vs defense matchups
         X["home_attack_vs_away_defense"] = df["home_goals_5"].fillna(1.2) - df[
             "away_conceded_5"
         ].fillna(1.2)
@@ -489,16 +484,13 @@ class LaLigaPredictor:
             "home_conceded_5"
         ].fillna(1.2)
 
-        # H2H features
         X["h2h_home_win_rate"] = df["h2h_home_win_rate"].fillna(0.5)
         X["h2h_home_goals_diff"] = df["h2h_home_goals_diff"].fillna(0.0)
 
-        # Referee bias
         X["ref_bias_diff"] = df["ref_home_bias"].fillna(0.5) - df[
             "ref_away_bias"
         ].fillna(0.5)
 
-        # Combined strength metric
         X["strength"] = (
             X["ppg_diff"] * 0.20
             + X["home_advantage"] * 0.16
@@ -518,9 +510,21 @@ class LaLigaPredictor:
         X["matchday"] = df["matchday"]
         return X
 
-    def test(
-        self, train_seasons=["2023", "2024"], test_season="2025", test_matchdays=None
-    ):
+    def test(self, train_seasons=None, test_season="2025", test_matchdays=None):
+        if train_seasons is None:
+            train_seasons = [
+                "2015",
+                "2016",
+                "2017",
+                "2018",
+                "2019",
+                "2020",
+                "2021",
+                "2022",
+                "2023",
+                "2024",
+            ]
+
         train_df = self.matches_df[
             self.matches_df["season"].isin(train_seasons)
             & self.matches_df["result"].notna()
@@ -559,9 +563,6 @@ class LaLigaPredictor:
 
 if __name__ == "__main__":
     predictor = LaLigaPredictor()
-    predictor.fetch_data().calculate_stats()
-    predictor.test(
-        train_seasons=["2023", "2024"],
-        test_season="2025",
-        test_matchdays=list(range(1, 16)),
-    )
+    predictor.fetch_data()
+    predictor.calculate_stats()
+    predictor.test(test_matchdays=list(range(1, 16)))
