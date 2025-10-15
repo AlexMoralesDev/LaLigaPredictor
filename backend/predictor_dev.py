@@ -47,6 +47,21 @@ class LaLigaPredictor:
     def fetch_data(self, seasons=None):
         if seasons is None:
             seasons = [
+                "2000",
+                "2001",
+                "2002",
+                "2003",
+                "2004",
+                "2005",
+                "2006",
+                "2007",
+                "2008",
+                "2009",
+                "2010",
+                "2011",
+                "2012",
+                "2013",
+                "2014",
                 "2015",
                 "2016",
                 "2017",
@@ -513,6 +528,21 @@ class LaLigaPredictor:
     def test(self, train_seasons=None, test_season="2025", test_matchdays=None):
         if train_seasons is None:
             train_seasons = [
+                "2000",
+                "2001",
+                "2002",
+                "2003",
+                "2004",
+                "2005",
+                "2006",
+                "2007",
+                "2008",
+                "2009",
+                "2010",
+                "2011",
+                "2012",
+                "2013",
+                "2014",
                 "2015",
                 "2016",
                 "2017",
