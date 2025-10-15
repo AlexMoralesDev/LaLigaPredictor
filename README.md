@@ -1,6 +1,7 @@
 # La Liga Match Predictor
 
 **Live Application:** [https://laligapredictor.netlify.app](https://laligapredictor.netlify.app)
+![La Liga Predictor Demo](GitVisuals/LaLigaDemo.gif)
 
 A full-stack machine learning web app that predicts Spanish La Liga match outcomes using statistical modeling and real-time data.  
 Developed with **Python** for the backend prediction engine and **React (TypeScript)** for the interactive frontend interface.
