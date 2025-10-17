@@ -19,7 +19,6 @@ API_KEY = os.getenv('FOOTBALL_API_KEY')
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Validate environment variables
 if not API_KEY:
     print("ERROR: FOOTBALL_API_KEY not found in .env file")
     exit(1)
@@ -32,7 +31,6 @@ if not SUPABASE_KEY:
 
 headers = {"X-Auth-Token": API_KEY}
 
-# Initialize Supabase client
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     print("✓ Supabase client initialized")
@@ -45,7 +43,6 @@ class LaLigaPredictor:
         pass
         
     def get_la_liga_data(self):
-        """Fetch La Liga data from API with retry logic"""
         print("Fetching data from API...")
         
         urls = {
@@ -114,7 +111,6 @@ class LaLigaPredictor:
         return responses['2023'], responses['2024'], responses['2025']
     
     def create_matches_dataframe(self, data):
-        """Create DataFrame from API response"""
         matches_list = []
         for match in data['matches']:
             match_info = {
@@ -134,7 +130,6 @@ class LaLigaPredictor:
         return pd.DataFrame(matches_list).sort_values('date')
     
     def calculate_predictive_stats(self, df):
-        """Calculate enhanced predictive statistics"""
         team_stats = defaultdict(lambda: {
             'matches': 0, 'points': 0, 'wins': 0, 'draws': 0, 'losses': 0,
             'goals_for': 0, 'goals_against': 0,
@@ -417,12 +412,10 @@ class LaLigaPredictor:
         return df
     
     def create_target(self, df):
-        """Create target variable"""
         target_map = {'HOME_TEAM': 1, 'AWAY_TEAM': 0, 'DRAW': 2}
         return df['result'].map(target_map)
     
     def create_focused_features(self, df):
-        """Create focused feature set"""
         features = pd.DataFrame()
         
         features['ppg_difference'] = df['home_ppg'].fillna(1.5) - df['away_ppg'].fillna(1.5)
@@ -463,21 +456,17 @@ class LaLigaPredictor:
         return features
     
     def save_to_supabase(self, gameweek, predictions, training_accuracy):
-        """Save predictions to Supabase"""
         try:
             print(f"\nSaving predictions to Supabase...")
             
-            # Delete existing predictions for this gameweek
             supabase.table('predictions').delete().eq('gameweek', gameweek).execute()
             
-            # Insert new predictions
             for pred in predictions:
-                # Explicitly convert numeric types to standard Python types for JSON serialization
                 home_score_val = pred.get('home_score')
                 away_score_val = pred.get('away_score')
                 
                 data = {
-                    'gameweek': int(gameweek), # Ensure gameweek is a standard integer
+                    'gameweek': int(gameweek),
                     'home_team': pred['home_team'],
                     'away_team': pred['away_team'],
                     'predicted_result': pred['predicted_result'],
@@ -486,21 +475,19 @@ class LaLigaPredictor:
                     'draw_prob': pred['draw_prob'],
                     'match_date': pred['date'],
                     'actual_result': pred.get('actual_result'),
-                    'home_score': int(home_score_val) if pd.notna(home_score_val) else None, # Convert to standard int
-                    'away_score': int(away_score_val) if pd.notna(away_score_val) else None, # Convert to standard int
+                    'home_score': int(home_score_val) if pd.notna(home_score_val) else None,
+                    'away_score': int(away_score_val) if pd.notna(away_score_val) else None, 
                     'is_correct': pred.get('correct'),
                     'predicted_at': datetime.now().isoformat()
                 }
                 supabase.table('predictions').insert(data).execute()
             
-            # Update model stats
             stats_data = {
                 'training_accuracy': training_accuracy,
                 'last_updated': datetime.now().isoformat(),
-                'current_gameweek': int(gameweek) # Ensure gameweek is a standard integer
+                'current_gameweek': int(gameweek)
             }
             
-            # Check if stats exist
             existing_stats = supabase.table('model_stats').select('id').limit(1).execute()
             
             if existing_stats.data:
@@ -527,7 +514,6 @@ class LaLigaPredictor:
         training_2024_df = self.create_matches_dataframe(training_2024_data)
         current_2025_df = self.create_matches_dataframe(current_2025_data)
         
-        # Find current gameweek
         all_2025_matches = current_2025_df.copy()
         current_gameweek = None
         
@@ -547,10 +533,8 @@ class LaLigaPredictor:
             print("❌ No gameweek to predict - all matches may be completed")
             return
         
-        # Get matches for current gameweek
         gameweek_matches = all_2025_matches[all_2025_matches['matchday'] == current_gameweek].copy()
         
-        # Prepare training data
         print("\nPreparing training data...")
         training_2023_df = training_2023_df[training_2023_df['result'].notna()].copy()
         training_2024_df = training_2024_df[training_2024_df['result'].notna()].copy()
@@ -566,7 +550,6 @@ class LaLigaPredictor:
         
         print(f"✓ Training on {len(training_matches)} completed matches")
         
-        # Calculate stats
         print("\nCalculating team statistics...")
         all_data = pd.concat([training_matches, gameweek_matches]).sort_values('date').reset_index(drop=True)
         all_data_with_stats = self.calculate_predictive_stats(all_data.copy())
@@ -574,13 +557,11 @@ class LaLigaPredictor:
         training_data = all_data_with_stats.iloc[:len(training_matches)].copy()
         prediction_data = all_data_with_stats.iloc[len(training_matches):].copy()
         
-        # Create features
         print("Creating features...")
         training_features = self.create_focused_features(training_data)
         training_target = self.create_target(training_data)
         prediction_features = self.create_focused_features(prediction_data)
         
-        # Train model
         print("Training Random Forest model...")
         rf = RandomForestClassifier(
             n_estimators=300,
@@ -595,7 +576,6 @@ class LaLigaPredictor:
         
         rf.fit(training_features, training_target)
         
-        # Make predictions
         print("Making predictions...")
         predictions = rf.predict(prediction_features)
         probabilities = rf.predict_proba(prediction_features)
@@ -633,7 +613,6 @@ class LaLigaPredictor:
                 'date': match['date'].isoformat()
             }
             
-            # Check if match is completed
             if pd.notna(match['result']):
                 if match['result'] == 'HOME_TEAM':
                     actual_result = f"{home_team} Win"
@@ -643,7 +622,6 @@ class LaLigaPredictor:
                     actual_result = "Draw"
                 
                 prediction_record['actual_result'] = actual_result
-                # These are the values that need conversion before saving to Supabase
                 prediction_record['home_score'] = match['home_score']
                 prediction_record['away_score'] = match['away_score']
                 prediction_record['correct'] = predicted_result == actual_result
@@ -654,7 +632,6 @@ class LaLigaPredictor:
             print(f"Prediction: {predicted_result}")
             print(f"Confidence: {home_team} {home_prob:.1f}% | Draw {draw_prob:.1f}% | {away_team} {away_prob:.1f}%\n")
         
-        # Save to Supabase
         self.save_to_supabase(current_gameweek, matches_predictions, training_accuracy)
         
         print(f"\n{'='*60}")
