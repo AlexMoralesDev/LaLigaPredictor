@@ -11,7 +11,10 @@ on:
 jobs:
   run-predictor:
     runs-on: ubuntu-latest
-
+    env:
+      FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
