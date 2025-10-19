@@ -27,4 +27,4 @@ jobs:
 
       - name: Run predictor script
         run: |
-          python root/backend/predictor.py
+          python backend/predictor.py
