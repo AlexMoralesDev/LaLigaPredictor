@@ -1,0 +1,30 @@
+name: Run Predictor Script
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # runs every 15 minutes (GitHub’s max frequency)
+  workflow_dispatch: # lets you run manually in the Actions tab
+  push:
+    branches:
+      - main # optional: run also on pushes to main
+
+jobs:
+  run-predictor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run predictor script
+        run: |
+          python root/backend/predictor.py
