@@ -23,8 +23,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Debug installed packages
+        run: |
+          python -m pip show numpy
+          python -m pip show pandas
+          python --version
       - name: Run predictor script
         run: |
           python backend/predictor.py
