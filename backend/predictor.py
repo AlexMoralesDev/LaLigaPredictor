@@ -585,10 +585,10 @@ class LaLigaPredictor:
                     "match_date": pred["date"],
                     "actual_result": pred.get("actual_result"),
                     "home_score": (
-                        int(home_score_val) if pd.notna(home_score_val) else None
+                        int(home_score_val) if pd.notna(home_score_val) and pred.get("status") == "FINISHED" else None
                     ),
                     "away_score": (
-                        int(away_score_val) if pd.notna(away_score_val) else None
+                        int(away_score_val) if pd.notna(away_score_val) and pred.get("status") == "FINISHED" else None
                     ),
                     "is_correct": pred.get("correct"),
                     "predicted_at": datetime.now().isoformat(),
@@ -752,6 +752,7 @@ class LaLigaPredictor:
                 prediction_record["actual_result"] = actual_result
                 prediction_record["home_score"] = match["home_score"]
                 prediction_record["away_score"] = match["away_score"]
+                prediction_record["status"] = match["status"]
                 prediction_record["correct"] = predicted_result == actual_result
 
             matches_predictions.append(prediction_record)
